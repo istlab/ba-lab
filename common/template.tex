@@ -1,0 +1,67 @@
+%&encoding=IsoLatin7
+\documentclass[pdf,default,nototal]{prosper}
+
+\usepackage{times}
+
+\usepackage{graphics}
+\usepackage{graphicx}
+%\usepackage{listings}
+\usepackage{url}
+
+\newcommand{\labno}{LAB\_NO}
+\newcommand{\labtitle}{LAB\_TITLE}
+\newcommand{\lab}{Tutorial \labno: \labtitle}
+\newcommand{\todo}[1]{\textbf{TODO}\footnote{\textbf{TODO:} #1}}
+
+\hypersetup{colorlinks=true,linkcolor=blue}
+
+\newif\ifPDF
+\ifx\pdfoutput\undefined\PDFfalse
+\else\ifnum\pdfoutput > 0\PDFtrue
+	\else\PDFfalse
+	\fi
+\fi
+
+\ifPDF
+\usepackage[pdftex,
+		   	bookmarks=false,
+		   	pdftitle={\lab},
+		   	pdfauthor={Georgios Gousios}, 
+		   	pdfsubject={Lecture slides for~\lab}, 
+			pdfkeywords={\lab}
+		   ]{hyperref}
+\else
+\usepackage{hyperref}
+\fi
+
+\title{\lab}
+\author{Georgios Gousios}
+\email{gousiosg@aueb.gr}
+\slideCaption{\lab}
+\Logo{\includegraphics[scale=0.2]{aueb.eps}}
+\institution{Department of Management Science and Technology\\
+Athens University of Economics and Business\\
+
+{\small $Revision: 346 $}  }
+
+\begin{document}
+\maketitle
+
+\begin{slide}{Contents}
+	\ptsize{14}
+	\myitem{1}{$\bullet$}
+    \myitem{2}{$\circ$}
+    \myitem{3}{$\triangleright$}
+	\begin{itemize}
+		\item 
+	\end{itemize}
+\end{slide}
+
+\begin{slide}{Slide\_Title}}
+	\ptsize{14}
+	\begin{itemize}
+		\item
+	\end{itemize}
+\end{slide}
+
+\end{document}
