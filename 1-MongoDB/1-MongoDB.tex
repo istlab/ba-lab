@@ -1,0 +1,1951 @@
+\documentclass{beamer}
+
+\usepackage[british]{babel}
+\usepackage{beamerthemeWarsaw}
+\usepackage{pgf}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{comment}
+
+\newcommand{\labno}{8}
+\newcommand{\labtitle}{MongoDB}
+\newcommand{\lab}{Tutorial \labno: \labtitle}
+\newcommand{\todo}[1]{\textbf{TODO}\footnote{\textbf{TODO:} #1}}
+
+\hypersetup{colorlinks = true, linkcolor = orange, urlcolor = orange}
+
+
+\title{\labtitle}
+\author{Marios Fragkoulis}
+\date{25 May 2015}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section{Introduction}
+%% DEFINE MORE SECTIONS
+%% Upsert, Data model, Data aggregation
+
+%%
+\begin{frame}
+\frametitle{Contents}
+\begin{itemize}
+
+	\item Characteristics and use cases
+	\item Architecture
+	\item Data model - database, collection, document, fields
+	\item Operations - create, read, update, delete (CRUD)
+	\item Data aggregation
+	\item GUIs - Humongous
+
+\end{itemize}
+\end{frame}
+
+%%
+
+%%
+\begin{frame}
+\frametitle{Key characteristics}
+\begin{itemize}
+
+	\item innovative
+	\item fast time-to-market
+	% fast iterative development with dynamic schema
+	\item scalable using shards
+	% sharding: store data across multiple machines to achieve horizontal scaling
+	% pluggable storage architecture
+	\item reliability, fault-tolerance with replica sets
+	% replica sets: primary and secondaries
+	% if primary is down, a secondary will become primary
+	% an arbiter can coordinate the election for a new primary by collecting heartbeats from
+	% secondaries
+	\item inexpensive to operate
+	% commodity hardware, well supported operations management
+	\item tuneable consistency levels
+	% Strict consistency when reading from primary.
+	% If read preference is set to (nearest) secondary (to achieve higher throughput,
+	% then stale data may be returned because of asynchronous replication.
+	% Eventual consistency when reading from secondaries because eventually
+	% the secondary member's state will reflect the primary's state
+	% Shards can also be replica sets.
+	
+\end{itemize}
+\end{frame}
+%%
+
+%%
+\begin{frame}
+\frametitle{Use cases}
+\begin{itemize}
+
+	\item Good for short run or single processes, but not long run processes
+	% compare with long run processes as is the case with an ERP environment
+	% Orcale best suited for that.
+	\item Example use case: fits well CMS, but not ERP
+	\item Good for fluid data, which do not fit a rigid schema
+	\begin{itemize}
+		\item dynamic schema
+		\item nested data model
+	\end{itemize}
+	\item Supports complex operations on fluid data
+	\item Good for online analytical processing (OLTP)
+	% does ok in batch processing
+
+\end{itemize}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}
+\frametitle{Architecture}
+\begin{itemize}
+
+	\item Client - server
+	\item Distributed
+	\begin{itemize}
+		\item within data centers
+		\item across data centers
+	\end{itemize}
+
+\end{itemize}
+\end{frame}
+
+%%
+
+
+%%
+\begin{frame}
+\frametitle{Essentials: look around the Mongo Shell (1)}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+	\bfseries{Shell command} & \bfseries{Description} \\
+	\hline
+	 \texttt{mongo -u \textless user\textgreater{} -p \textless password\textgreater{} \textless db\_name\textgreater} & Connect to local Mongo database \\
+	 \texttt{show dbs} & Show the list of existing databases \\
+	 \texttt{db} & Show the db I am currently connected to \\
+	 \texttt{db.getCollectionNames()} & Show the list of collections in a database \\
+	 \texttt{db.\textless collection-name\textgreater. find()} & Show the list of documents in a collection \\
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+
+
+%%
+\begin{frame}
+\frametitle{Essentials: look around the Mongo Shell (2)}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+	\bfseries{Shell command} & \bfseries{Description} \\
+	\hline
+	 \texttt{db.\textless collection-name\textgreater. find(\textless filter\textgreater)} & Show the list of documents that satisfy the filter \\
+	 \texttt{db.\textless collection-name\textgreater. insert(\textless document\textgreater)} & Insert a document in the colelction \\
+	 \texttt{db.\textless collection-name\textgreater. remove(\textless filter\textgreater)} & Remove a document from the collection \\
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+
+
+
+\section{Data model}
+
+
+%%
+\begin{frame}
+\frametitle{Nested data model (1)}
+	\begin{itemize}
+		\item Strings
+		\item Numbers
+		\item Booleans
+		\item Pairs - string: value
+		\item Objects - A collection of name/value pairs surrounded by curly braces.
+		\item Arrays - A collection of objects or values surrounded by braces. 
+	\end{itemize}
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Nested data model (2)}
+	\begin{block}{A complete example that presents the data model.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+{ 
+   owner: {
+      name: "Vin",
+      surname: "Diesel"
+   },
+   kilometers: 40000, 
+   modified: true,
+   accessories: [ { nitro: "NOS" }, "exhaust" ]
+}
+        \end{lstlisting}
+	\end{block}
+% kilometers, modified, accessories without quotes: 
+% the parser tries hard to be nice and understands those as fields.
+\end{frame}
+
+
+
+%%
+\begin{frame}
+\frametitle{Useful bits}
+\begin{itemize}
+
+	\item Use double quotes when referring to document fields 
+	(although their use is dependent on the 
+	\href{http://en.wikipedia.org/wiki/JavaScript\_syntax\#Variables}{Javascript variable naming rules})
+	\item In values, use double quotes for strings only.
+%	\item Insert vs upsert
+%	\item Update vs replace
+	\item The data model is very flexible (but hurts data consistency)
+% Elements of different types in arrays
+% Documents of different form in the same collection
+
+\end{itemize}
+\end{frame}
+
+%%
+\begin{frame}
+\frametitle{Naming rules as per MongoDB's Javascript API}
+\begin{itemize}
+
+	\item Name syntax that does not require quotes complies to:
+	\begin{itemize}
+		\item names that start with a letter, \_, or \$ sign, and,
+		% Javascript is case sensitive so letters are: a-z and A-Z.
+		\item in addition to the above, subsequent characters can also be a number
+	\end{itemize}
+
+\end{itemize}
+\end{frame}
+
+
+%%
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data model: when quotes are necessary (1)}
+	\begin{block}{The carefree way.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.update( {"owner.name": "Vin",
+		 "owner.surname": "Diesel" },
+		{
+		 $set: { "kilometers": 40000, 
+		         "modified": true,
+		         "accessories": [ 
+		         { "nitro": "NOS" } ] }
+		} )
+        \end{lstlisting}
+	\end{block}
+% $currentDate works for MongoDB version 2.6.0 and onwards
+\end{frame}
+
+%%
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data model: when quotes are necessary (2)}
+	\begin{block}{The more readable way.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.update( {"owner.name": "Vin",
+		 "owner.surname": "Diesel" },
+		{
+		 $set: { kilometers: 40000, 
+		         modified: true,
+		   accessories: [ { nitro: "NOS" } ] }
+		} )
+        \end{lstlisting}
+	\end{block}
+% $currentDate works for MongoDB version 2.6.0 and onwards
+\end{frame}
+
+
+%%
+\begin{frame}
+\frametitle{Relationships between documents}
+\begin{itemize}
+
+	\item embedded documents
+	\begin{itemize}
+		\item One-to-one relationships between documents
+		\item One-to-many relationships between documents
+	\end{itemize}
+
+	\item document references
+	\begin{itemize}
+		\item One-to-many relationships between documents
+	\end{itemize}
+
+
+\end{itemize}
+\end{frame}
+
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Referencing or embedding (1)}
+	\begin{block}{Referencing}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+{ 
+ _id: "574956232",
+ name: "Vin",
+ surname: "Diesel",
+}
+
+{ 
+ sign: "IMN5672",
+ kilometers: 0, 
+ modified: false,
+ accessories: [],
+ tyres: "Bridgestone",
+ owner_id: "574956232"
+}
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Referencing or embedding (2)}
+	\begin{block}{Embedding: the one-to-many relationship case}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+{
+ sign: "IMN5672",
+ kilometers: 0, 
+ modified: false,
+ accessories: [],
+ tyres: "Bridgestone",
+ owners: [
+  { name: "Vin",
+    surname: "Diesel" },
+  { name: "Gin",
+    surname: "Diesel" } ]
+}
+        \end{lstlisting}
+	\end{block}
+% Save query time and effort
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Referencing or embedding (3)}
+	\begin{block}{Embedding: the unbounded many-to-many relationship case}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+{ ...
+ sign: "IMN5672",
+ manufacturer: 
+ { name: "Audi",
+   origin: "Germany" }
+}
+{ ...
+ sign: "NIA5352",
+ manufacturer: 
+ { name: "Audi",
+   origin: "Germany" }
+}
+
+        \end{lstlisting}
+	\end{block}
+% Save query time and effort.
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Referencing or embedding (4)}
+	\begin{block}{Referencing: the unbounded many-to-many relationship case}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+{
+ name: "Audi",
+ origin: "Germany"
+}
+{...
+ sign: "IMN5672",
+ manufacturer_id: "Audi"
+}
+
+{ ...
+ sign: "NIA5352",
+ manufacturer_id: "Audi"
+}
+
+        \end{lstlisting}
+	\end{block}
+% Reduce replication, save storage space.
+\end{frame}
+%%
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Referencing or embedding (5)}
+	\begin{block}{Referencing: example query routine using Javascript in client}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+var cursor = db.customers.find();
+while (cursor.hasNext()) {
+  c = cursor.next();
+  var cursor2 = db.cars.find(
+         { name: c[ 'manufacturer_id' ] } );
+  while (cursor2.hasNext()) {
+      cr = cursor2.next();
+      printjson(c[ 'sign' ] + ", " +  
+            cr[ 'name' ] + ", " + cr[ 'origin' ] );
+  }
+}
+
+        \end{lstlisting}
+	\end{block}
+% Reduce replication, save storage space.
+\end{frame}
+
+
+
+%%
+\begin{frame}
+\frametitle{Query the schema with the Mongo Shell}
+
+\begin{tabular}{p{18em}p{6em}}
+	\hline
+
+	\bfseries{Shell command} & \bfseries{Description} \\
+	\hline
+% but no schema constraint applies so what is this?
+	 \texttt{var schema = db.\textless collection-name\textgreater{}.findOne()} & Show the top-level schema of the first document in a collection \\
+	 \texttt{for (var field in schema) \{ print (field) ; \} } & \\
+	 % Works because schema is a document, i.e. a map, and you are iterating its keys.
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+
+\section{Operations}
+
+%%
+%%
+\begin{frame}
+\frametitle{Create with the Mongo Shell (1)}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+
+	\bfseries{Shell command} & \bfseries{Description} \\
+	\hline
+% but no schema constraint applies so what is this?
+	 \texttt{use \textless db-name\textgreater{}} & Create and switch to database \\
+	 \texttt{db.addUser(\textless user\textgreater{}, \textless password\textgreater{})} & Add user to database \\
+	 \texttt{mongo --authenticationDatabase \textless db-name\textgreater{} -u \textless user\textgreater{} -p \textless password\textgreater{} \textless db-name-to-connect-to\textgreater} & Connect to Mongo database by authenticating in another database \\
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+%%
+
+\begin{frame}
+\frametitle{Create with the Mongo Shell (2)}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+
+	\bfseries{Shell command} & \bfseries{Description} \\
+	\hline
+	 \texttt{db.createCollection( \textless collection-name\textgreater, options)} & Create a collection; options are not necessary \\
+	 \texttt{db.createCollection( \textless collection-name\textgreater, options)} & Create a collection; options are not necessary \\
+	 \texttt{db.\textless collection-name\textgreater. insert( \{ field1: "value1", field2: "value2" \})} & Create a document in a collection \\
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+
+%%
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Insert embedded objects}
+	\begin{block}{Check out the nested data model}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.insert( { owner: { name: "Vin",
+		             surname: "Diesel",
+		           },
+		 sign: "IMN5672",
+		 kilometers: 0, 
+		 modified: false,
+		 accessories: [],
+		 tyres: "Bridgestone",
+		} )
+        \end{lstlisting}
+	\end{block}
+% $currentDate works for MongoDB version 2.6.0 and onwards
+\end{frame}
+
+\begin{frame}
+\frametitle{Update with the Mongo Shell}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+
+	\bfseries{Shell command} & \bfseries{Description} \\
+	\hline
+	 \texttt{db.\textless collection-name\textgreater. update( \{"field": "value" \} )} & Update a document in a collection \\
+	 \texttt{db.\textless collection-name\textgreater. update( \{"field": "value", multi: true \} )} & Update multiple documents in a collection (those that match the filter) \\
+	 \texttt{db.\textless collection-name\textgreater. upsert( \{ \} )} & Remove all documents from a collection \\
+	 \texttt{db.\textless collection-name\textgreater. drop()} & Drop a collection \\
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Update documents (1)}
+	\begin{block}{Filter 1 field \\ 
+	Update 1 field \\ 
+	Apply to a single document}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Update the field tyres to the value "Michelin" 
+//   of a single document, car, in the collection 
+//   cars whose field sign is "IMN5672".
+db.cars.update( { sign: "IMN5672" },
+		{
+		 $set: { tyres: "Michelin" },
+		 $currentDate: { lastModified: true }
+	        } )
+        \end{lstlisting}
+	\end{block}
+%$set operator: replace the value of a field with the provided value
+% $currentDate operator: set the value of a field to current date, either as a Date or as a timestamp
+% $currentDate updates the lastModified field with the current Date
+% If lastModified was set to false, the date would, again be set.
+% The rationale is to provide consistency with $unset: false which 
+% removes a field from a document despite the false value.
+% $currentDate works for MongoDB version 2.6.0 and onwards
+% Other update operators: $inc, $mul, $rename, $setOnInsert, $unset, $min, $max
+%Specifically, for arrays: $addToSet, $pop, $pullAll, $pull, $push
+% Array operator modifiers: $each, $slice, $sort, $position
+\end{frame}
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Update documents (2)}
+	\begin{block}{Filter 2 fields \\ 
+	Update 1 field \\ 
+	Apply to a single document}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Update the field tyres to the value "Michelin" 
+//   of a single document, car, in the collection 
+//   cars whose field sign is "IMN5672".
+db.cars.update( { "owner.name": "Vin", 
+		  "owner.surname": "Diesel" },
+		{
+		 $set: { tyres: "Michelin" },
+		 $currentDate: { lastModified: true }
+		} )
+        \end{lstlisting}
+	\end{block}
+% $currentDate works for MongoDB version 2.6.0 and onwards
+\end{frame}
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Update documents (3)}
+	\begin{block}{Filter 2 fields \\
+	Update 2 fields \\
+	Apply to a single document}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Update the fields brand and model of object tyres
+//   of a single document, car, in the collection 
+//   cars whose field sign is "IMN5672".
+db.cars.update( { "owner.name": "Vin", 
+		 "owner.surname": "Diesel" },
+		{
+		 $set: { "tyres.brand": "Michelin", 
+		     "tyres.model": "SC3" },
+		 $currentDate: { lastModified: true }
+		} )
+        \end{lstlisting}
+	\end{block}
+% $currentDate works for MongoDB version 2.6.0 and onwards
+\end{frame}
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Update documents (4)}
+	\begin{block}{Filter 2 fields \\
+	Update 2 fields \\
+	Apply to all documents (that match the filter}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Update the fields brand and model of object tyres
+// of all documents, that model car instances,
+// in the collection cars whose owner object field name
+// is "Vin" and surname is "Diesel".
+db.cars.update( { "owner.name": "Vin",
+		  "owner.surname": "Diesel" },
+		{
+		 $set: { "tyres.brand": "Michelin", 
+		     "tyres.model": "SC3" },
+		 $currentDate: { lastModified: true }
+		},
+		{ multi: true } )
+        \end{lstlisting}
+	\end{block}
+% $currentDate works for MongoDB version 2.6.0 and onwards
+\end{frame}
+
+\begin{frame}[containsverbatim]
+\frametitle{Update documents (5)}
+	\begin{block}{Replace a document}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Provide the characteristic id (not the _id field) 
+// of the document to be replaced and the new 
+// document that will replace the old.
+// The new document will not include any fields of 
+// the old document that are not present in the new one.
+db.cars.update( { "car_id" = "3453453" },
+		{ "owner": { "name": "Gas",
+		             "surname": "Diesel",
+		           },
+		 "kilometers": 0,
+		 "modified": false
+	        } )
+        \end{lstlisting}
+	\end{block}
+% Explain auto-generated field _id.
+% Pay attention to $set; none here.
+\end{frame}
+
+\begin{frame}[containsverbatim]
+\frametitle{Update documents (6)}
+	\begin{block}{Replace a document with upsert}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Upsert: replace if found, insert if not found.
+// The new document will not include any fields of 
+// the old document that are not present in the new one.
+db.cars.update( { "car_id" = "3453454" },
+		{ "owner": { "name": "Gas",
+		             "surname": "Diesel",
+		           },
+		 "kilometers": 0,
+		 "modified": false
+	        },
+	        { upsert: true } )
+        \end{lstlisting}
+	\end{block}
+% Upsert: replace document or insert if not found
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Update document (7)}
+	\begin{block}{Add element to array field} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.update( {"owner.name": "Vin",
+		 "owner.surname": "Diesel" },
+		{
+		 $push { accessories: "GPS" },
+		} )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+% This will update a single document that will match the constraint.
+% To update multiple documents use { multi: true }
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Update document (8)}
+	\begin{block}{Add multiple elements to array field}
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.update( {"owner.name": "Vin",
+		 "owner.surname": "Diesel" },
+		{
+		$push { "accessories": { $each: [ "GPS", 
+		                   "ESP" ] }  }
+		} )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+% This will update a single document that will match the constraint.
+% To update multiple documents use { multi: true }
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Update document (9)}
+	\begin{block}{Add multiple elements to array field}
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.update( {"owner.name": "Vin",
+		 "owner.surname": "Diesel" },
+		{
+		$push { "accessories": { $each: [ "GPS", 
+		                   "ESP" ] }  },
+		} )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+% This will update a single document that will match the constraint.
+% To update multiple documents use { multi: true }
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Update document (10) - rank}
+	\begin{block}{Add multiple elements to array field}
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following document:
+// D1: { carId: "4567564" },
+//              { speedTests: [ { name: "VD", time: 5 }, 
+//                        { name: "PW", time: 4.7 } ] }
+db.cars.update( { carId: "4567564" },
+		{
+		 $push { speedTests: { $each: [ 
+		     { name: "VD", time: 5.2 },
+		     { name: "VD", time: 4.5 },
+		     { name: "PW", time: 4 } ]
+		 $sort: { time: 1 },
+		 $slice: 3 }
+		} } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (1)}
+	\begin{block}{Query all documents} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.findOne()
+db.cars.find()
+db.cars.find( { } )
+        \end{lstlisting}
+	\end{block}
+% findOne(): which one? according to the natural order of documents on disk.
+% For capped collections, this is the same as the insertion order.
+% Capped collections: fixed size, high throughput collections, similar to circular buffers (e.g. I/O).
+% kilometers, modified, accessories without quotes: 
+% the parser tries hard to be nice and understands those as fields.
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (2)}
+	\begin{block}{Query documents that satisfy a filter} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars whose sign is "IMN5672".
+db.cars.find( { sign: "IMN5672" } )
+        \end{lstlisting}
+	\end{block}
+% kilometers, modified, accessories without quotes: 
+% the parser tries hard to be nice and understands those as fields.
+\end{frame}
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (3)}
+	\begin{block}{Query documents that satisfy a filter: inequality} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars with less than 10K kilometers and
+// horsepower greater than 100.
+db.cars.find( { kilometers: { $lt: 10000 } }, 
+              { horsepower: { $gt: 100 } } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (4)}
+	\begin{block}{Query documents that satisfy a filter: special case of inequality} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars with less than 10K kilometers or
+// greater than 100K kilometers.
+// The default for multiple filters on the same 
+// field is or.
+db.cars.find( { kilometers: { $lt: 10000 } }, 
+              { kilometers: { $gt: 100000 } } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (5)}
+	\begin{block}{Query documents that satisfy a filter: logical or} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars with less than 10K kilometers or
+// greater than 100K kilometers.
+db.cars.find( {$or: [ { kilometers: { $lt: 10000 } }, 
+                      { horsepower: { $gt: 100 } } ] 
+              } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (6)}
+	\begin{block}{Query documents that satisfy a filter: logical and} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars with less than 10K kilometers or
+// greater than 100K kilometers.
+db.cars.find( {$and: [ { kilometers: { $lt: 10000 } }, 
+                      { kilometers: { $gt: 100000 } } ] 
+              } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (7)}
+	\begin{block}{Query documents that satisfy a filter: and, or combined} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars with less than 10K kilometers or
+// greater than 100K kilometers.
+db.cars.find( { $or: [ { kilometers: { $lt: 10000 } }, 
+                      { horsepower: { $gt: 100000 } } ],
+                      { "tyres.brand": "Michelin" }
+              } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (8)}
+	\begin{block}{Query embedded documents that satisfy a filter - exact match} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars whose owner is named "Vin Diesel".
+db.cars.find( { owner: { surname: "Diesel", 
+                name: "Vin" } } )
+        \end{lstlisting}
+	\end{block}
+% filter order matter.
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (9)}
+	\begin{block}{Query embedded documents that satisfy a filter - exact match} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars whose owner is named "Vin Diesel".
+db.cars.find( { owner: { name: "Vin", 
+                surname: "Diesel" } } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (10)}
+	\begin{block}{Query fields in embedded documents that satisfy a filter: exact match} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Find the cars whose owner is named "Vin Diesel".
+db.cars.find( { "owner.name": "Vin", 
+                "owner.surname": "Diesel" } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (11)}
+	\begin{block}{Query embedded array that satisfies a filter - exact match} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., accessories: [ { nitro: "NOS" },
+//                            "exhaust" ] ...}
+// D2: {..., accessories: [ { nitro: "NOS" },
+//                            "exhaust", "GPS" ] ... }
+db.cars.find( { accessories: [ "exhaust",
+                             { nitro : "NOS" } ] } )
+        \end{lstlisting}
+	\end{block}
+% Filter order matters.
+\end{frame}
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (12)}
+	\begin{block}{Query embedded array that satisfies a filter - exact match} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., accessories: [ { nitro: "NOS" }, 
+//                            "exhaust" ] ...}
+// D2: {..., accessories: [ { nitro: "NOS" }, 
+//                            "exhaust", "GPS" ] ... }
+db.cars.find( { accessories: [ { nitro : "NOS" }, 
+                             "exhaust" ] } )
+        \end{lstlisting}
+	\end{block}
+% filter order matters.
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (13))}
+	\begin{block}{Query embedded arrays that satisfy a filter} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., accessories: [ { nitro: "NOS" }, 
+//                            "exhaust" ] ...}
+// D2: {..., accessories: [ { nitro: "NOS" }, 
+//                            "exhaust", "GPS" ] ... }
+db.cars.find( { accessories: "exhaust" } )
+        \end{lstlisting}
+	\end{block}
+\end{frame}
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (14)}
+	\begin{block}{Query embedded arrays by position} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., accessories: [ { nitro: "NOS" },
+//                            "exhaust" ] ...}
+// D2: {..., accessories: [ { nitro: "NOS" },
+//                            "exhaust", "GPS" ] ... }
+db.cars.find( { "accessories.1": "exhaust" } )
+        \end{lstlisting}
+	\end{block}
+
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (15)}
+	\begin{block}{Query embedded arrays - element precise matching}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., services: [ 10000, 100000 ], ... }
+// D2: {..., services: [ 10000, 50000, 100000 ], ... }
+db.cars.find( { services: { $elemMatch: { $gt: 10000, 
+                                          $lt: 100000 } 
+                            } )
+        \end{lstlisting}
+	\end{block}
+% $elemMatch: at least one element of the array satisfies all the criteria.
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (16)}
+	\begin{block}{Query embedded arrays - match combination of elements}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., services: [ 10000, 100000 ], ... }
+// D2: {..., services: [ 10000, 50000, 100000 ], ... }
+db.cars.find( { services: { $gt: 10000, $lt: 100000 } }
+        )
+        \end{lstlisting}
+	\end{block}
+% Some combination of elements satisfy the criteria
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (17)}
+	\begin{block}{Query embedded documents in embedded arrays that satisfy a filter} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., accessories: [ { nitro: "NOS" },
+//                            "exhaust" ] ...}
+// D2: {..., accessories: [ { nitro: "NOS" },
+//                            "exhaust", "GPS" ] ... }
+db.cars.find( { accessories: "exhaust",
+                "accessories.nitro": "NOS" } )
+        \end{lstlisting}
+	\end{block}
+% Filter order does not matter
+% + Array queries: exact match, element match
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (18)}
+	\begin{block}{Query embedded documents in embedded arrays by position} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., accessories: [ { nitro: "NOS" },
+//                            "exhaust" ] ...}
+// D2: {..., accessories: [ { nitro: "NOS" },
+//                            "exhaust", "GPS" ] ... }
+db.cars.find( { accessories: "exhaust",
+                "accessories.1.nitro": "NOS" } )
+        \end{lstlisting}
+	\end{block}
+% Filter order does not matter
+\end{frame}
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Read documents (19)}
+	\begin{block}{Query embedded documents in embedded arrays by position} 
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: {..., accessories: [ { nitro: "NOS",
+//            bought: ISODate("2013-06-22T21:00:00Z") },
+//                            "exhaust" ] ...}
+// D2: {..., accessories: [ { nitro: "NOS", 
+//            bought: ISODate("2010-03-12T11:00:00Z") },
+//                            "exhaust", "GPS" ] ... }
+db.cars.find( { accessories: { $elemMatch: { 
+              nitro: "NOS", 
+              bought: ISODate("2010-03-12T11:00:00Z") 
+    } } } )
+        \end{lstlisting}
+	\end{block}
+% Filter order does not matter
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Remove with the Mongo Shell}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+
+	\bfseries{Shell command} & \bfseries{Description} \\
+	\hline
+	 \texttt{db.\textless collection-name\textgreater. remove( \{"field": "value" \} )} & Remove a document from a collection \\
+	 \texttt{db.\textless collection-name\textgreater. remove( \{"field": "value", justOne: true \} )} & Remove only one document from a collection (multiple documents could match the condition) \\
+	 \texttt{db.\textless collection-name\textgreater. remove( \{ \} )} & Remove all documents from a collection \\
+	 \texttt{db.\textless collection-name\textgreater. drop()} & Drop a collection \\
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+%%
+
+%%
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Remove documents (1)}
+	\begin{block}{Remove all documents from a collection.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.remove()
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+
+%%
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Remove documents (2)}
+	\begin{block}{Remove all documents that match a filter.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.remove( { kilometers: 200000 } )
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+%%
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Remove documents (3)}
+	\begin{block}{Remove a single document that matches a filter.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.remove( { kilometers: 200000 }, 1 )
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+%%
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Remove documents (4)}
+	\begin{block}{Remove a specific document that matches a filter.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.findAndModify( { query: { kilometers: 200000 },
+                         sort: { rating: -1 },
+                         remove: true
+                } )
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+
+
+
+%%
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Remove documents (5)}
+	\begin{block}{Remove the first or last element from an array.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: { kilometers: 3000, accessories: [ 
+//                   { nitro: "NOS" }, "exhaust" ] ...}
+db.cars.update( { kilometers: 3000 },
+                   { $pop: { ingredients: -1 } } )
+	\end{lstlisting}
+	\end{block}
+% Remove first element
+\end{frame}
+
+
+%%
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Remove documents (6)}
+	\begin{block}{Remove the first or last element from an array.} 
+	%Elements can be of different types.
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+// D1: { kilometers: 3000, accessories: [ 
+//                    { nitro: "NOS" }, "exhaust" ] ...}
+db.cars.update( { kilometers: 3000 },
+                    { $pop: { ingredients: 1 } } )
+	\end{lstlisting}
+	\end{block}
+% You can also have examples for $pull and $pullAll
+\end{frame}
+
+\section{Aggregation}
+
+%%
+\begin{frame}
+\frametitle{Data aggregation}
+\begin{itemize}
+
+	\item Aggregation pipelines
+	\item Map-Reduce
+	\item Single purpose aggregation
+
+\end{itemize}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - aggregation pipelines (1)}
+	\begin{block}{Group documents subject to a condition and aggregate fields}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Aggregate the amount of money services
+// have costed for each car that has less than
+// 30000 kilometers.
+db.cars.aggregate( [ 
+                  { $match: { kilometers: { 
+                                $lt: 30000 } } },
+                  { $group: { _id: "$sign", total: { 
+                                $sum: "$amount" } } }
+         ] )
+	\end{lstlisting}
+	\end{block}
+% Aggregate: wrapper to the aggregate database command
+% Alternative to MapReduce, operates on single collection.
+% The preferred alternative where the complexity of map-reduce
+% does not allow providing guarantees as to the computation task.
+% Some pipeline stages take a pipeline expression as operand.
+% Pipeline expressions specify the transformation to apply to the input documents.
+% Expressions have a document structure and can contain other expression.
+% Pipeline expression can only operate on the current document in the pipeline.
+% Expressions are stateless and are evaluated when seen by the aggregation
+% context except for aggregators.
+% Early filtering: $match, $limit, $skip
+% $match and $sort can take advantage of an index when they occur at the
+% beginning of the pipeline.
+% Interesting operations: $unwind (flatten-like)
+% Interesting examples: user preference data; likes example
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - aggregation pipelines (2)}
+	\begin{block}{Group documents subject to a condition and aggregate fields}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Aggregate the total amount of money services
+// have costed for each car if the total amount 
+//does not exceed 1000 Euros.
+db.cars.aggregate( [ 
+                  { $group: { _id: "$sign", total: { 
+                                $sum: "$amount" } } }
+                  { $match: { total: { 
+                                $lt: 1000 } } }
+        ] )
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - aggregation pipelines (3)}
+	\begin{block}{Group documents and then group again}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.aggregate( [ 
+                  { $group: { _id: {
+                            tyre_brand: "$tyre.brand",
+                            tyre_model: "$tyre.model" },
+                            amount: { $sum: "$amount" }
+                           },
+                  { $group: { _id: "$tyre.brand", 
+                         totalAmount: { $sum: "$amount" } 
+                            } } ] )
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - Map-Reduce (1)}
+	\begin{block}{Group documents subject to a condition, aggregate a field, and project some fields}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.mapReduce(
+       function() { emit( this.sign, this.amount); }
+           function(key, values) { 
+                  return Array.sum(values) },
+           { query: { kilometers: { $lt: 30000} },
+           out: "services_total_amount_per_car" }
+        )
+	\end{lstlisting}
+	\end{block}
+% MapReduce functions: javascript code
+% Input: document of a single collection
+% Output: can write to collections.
+% Input and output collections can be sharded.
+% In addition, to map and reduce, there is also the finalize function,
+% which allows final modifications to the output of the map and reduce operation,
+% e.g. additional calculations.
+% If output is written to a collection, then subsequent map-reduce operations
+% may happen that merge, replace-merge, or reduce new results with previous
+% results.
+\end{frame}
+%%
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - Map-Reduce (2.a)}
+	\begin{block}{Map car signs to amount of money paid in each service}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+var mapFunction = function() { 
+           for (var it = 0; it < this.items.length; 
+                            it++) {
+             var key = this.items[it].sign;
+             var value = {
+               count: 1,
+               amount: this.items[it].amount
+             };
+             emit(key, value);
+           } };
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - Map-Reduce (2.b)}
+	\begin{block}{Reduce}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+var reduceFunction = function(sign, visit) {
+             totalAmount = { count: 0, amount: 0 };
+             for (var it = 0; it < countObjVals.length; 
+                        it++) {
+               totalAmount.count += 
+                        countObjVals[it].count;
+               totalAmount.amount += 
+                        countObjVals[it].amount;
+             }
+             return totalAmount;
+           };
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - Map-Reduce (2.c)}
+	\begin{block}{Reduce}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine we have the following documents:
+var finalizeFunction = function(sign, visit_stats) {
+            visit_stats.avg = 
+               visit_stats.amount / visit_stats.visits;
+            return visit_stats;
+          };
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - Single purpose aggregation (1)}
+	\begin{block}{Count matching documents}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Count documents in the collection.
+db.cars.count()
+
+// Count documents in the collection that match a filter.
+db.cars.count( { kilometers: 50000 } )
+	\end{lstlisting}
+% They simplest way to aggregate
+% Context: single collection
+% Not very powerful or flexible
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - Single purpose aggregation (2)}
+	\begin{block}{Return distinct field values from a collection}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.distinct( "sign" )
+	\end{lstlisting}
+% They simplest way to aggregate
+% Not very powerful or flexible
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data aggregation - Single purpose aggregation (3)}
+	\begin{block}{Group data based on field values}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.group(
+         key: { sign: 1 },
+         cond: { kilometers: { $lt: 50000 },
+         reduce: function(cur, result) { 
+            result.sum += cur.sum },
+         initial: { sum: 0 } 
+    )
+	\end{lstlisting}
+% group does not support data in sharded collections.
+	\end{block}
+\end{frame}
+%%
+
+\section{Indexes}
+
+%%
+\begin{frame}
+\frametitle{Indexes}
+\begin{itemize}
+
+	\item speedup queries that target a specific collection
+	\item are a primary performance optimization mechanism
+	\item limit the number of documents to examine
+	\item work by having documents in a sorted order for a specific (sub)field(s)
+	% actually indexes store references to fields
+
+\end{itemize}
+\end{frame}
+
+%%
+
+
+%%
+\begin{frame}
+\frametitle{Index types}
+\begin{itemize}
+
+	\item \_id, default field, primary key, unique ascending index
+	% sorted by default on \_id?
+	\item single field
+	\item compound index
+	%user-defined index on multiple fields; order matters
+	\item multikey index
+	% array index
+	\item geospatial index
+	% index geospatial coordinate data
+	\item text index
+	% text search for string content in a collection using root words
+	\item hashed index
+
+\end{itemize}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}
+\frametitle{Index properties}
+\begin{itemize}
+
+	\item unique indexes
+	% ascending, reject duplicate values, 
+	% otherwise functionally equal to other types of indexes
+	\item sparse indexes
+	% only index documents that contain the indexed field
+	% combinable with unique
+	\item TTL indexes
+	% automatically remove items after an amount of time
+
+\end{itemize}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Single field indexes (1)}
+	\begin{block}{Create single field index and use in query}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.createIndex( { "kilometers" : 1 } )
+db.cars.find( { 
+        kilometers : { $gt: 10000 }
+    } )
+	\end{lstlisting}
+% Quotes needed?
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Single field indexes (2)}
+	\begin{block}{Create single field index on embedded document and use in query}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// Imagine the document
+db.cars.createIndex( { "speedTests.time" : -1 } )
+db.cars.find( { 
+      "speedTests.time" : { $lt: 4 }
+  } )
+	\end{lstlisting}
+% Quotes needed in createIndex?
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Compound indexes (1)}
+	\begin{block}{Create compound index and use in query}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.createIndex( { "kilometers": 1, 
+           "speedTests.time": 1 } )
+db.cars.find( { 
+           kilometers: { $gt: 10000 },
+           "speedTests.time": { $lt: 4 }
+          } )
+	\end{lstlisting}
+	\end{block}
+% ability to support sort operation on compound index keys depends on 
+% - sorting order, which should be the same as the index
+% - sort direction, which should be the same as the index or 
+% the reverse one for all indexes.
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Compound indexes (2)}
+	\begin{block}{Sort order}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.createIndex( { "kilometers": 1, 
+           "speedTests.time": 1 } )
+// Good
+db.cars.find().sort( {
+           kilometers : 1,
+           "speedTests.time" : 1
+       } )
+// Good
+db.cars.find().sort( {
+           kilometers : -1,
+           "speedTests.time" : -1
+       } )
+// Error
+db.cars.find().sort( {
+           kilometers : 1,
+           "speedTests.time" : -1
+       } )
+// Error
+db.cars.find().sort( {
+           kilometers : -1,
+           "speedTests.time" : 1
+       } )
+	\end{lstlisting}
+	\end{block}
+% Index creation is motivated by application needs.
+% Applications query for specific order;
+% so create index with that sort order
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Compound indexes (3)}
+	\begin{block}{Index prefixes}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+// kilometers is prefix.
+db.cars.createIndex( { "kilometers": 1, 
+           "speedTests.time": 1,
+           "tyres.brand": text } )
+// kilometers and speedTests.time are prefixes.
+db.cars.createIndex( { "kilometers": 1,
+           "speedTests.time": 1,
+           "tyres.brand": text
+      } )
+	\end{lstlisting}
+	\end{block}
+% Index can be used to query kilometers.
+% Index can be used to query kilometers and speedTests.time.
+% Index can be used to query kilometers, speedTests.time, and tyres.brand.
+% Index can be used to query kilometers and tyres.brand  with less
+% efficiency than an index on tyres.brand and owner.name
+% If both an index on kilometers and an index on kilometers, speedTests.time exist
+% the first index can be removed. MongoDB will always use the compound index.
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Text indexes (1)}
+	\begin{block}{Index strings and query index using text}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.createIndex( { "owner.surname": text, 
+                  "owner.name": text } )
+// Query the index for the string Richie.
+db.cars.find( { $text: { 
+         $search: "Richie" } } )
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Text indexes (2)}
+	\begin{block}{Index strings and query index with multiple strings}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.createIndex( { "owner.surname": text, 
+                  "owner.name": text } )
+// Space is interpreted as logical OR.
+db.cars.find( { $text: { 
+         $search: "Richie Kenningham Aho" } } )
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Text indexes (3)}
+	\begin{block}{Index strings and query index with exclusion criteria}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.createIndex( { "owner.surname": text, 
+                  "owner.name": text } )
+// Bar is interpreted as negation.
+db.cars.find( { $text: { 
+         $search: "Richie Kenningham -Aho" } } )
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Text indexes (4)}
+	\begin{block}{Index strings, query index, and get relevance score}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.createIndex( { "owner.surname": text, 
+                  "owner.name": text } )
+// Bar is interpreted as negation.
+db.cars.find( { 
+         $text: { $search: "Richie" },
+         score: { $meta: "textScore" }
+   } )
+	\end{lstlisting}
+	\end{block}
+% score is a new field
+% $meta is an operator to query search metada.
+% textScore is one such kind of metadata that reflects the
+% relevance of the document to the search criteria.
+% Additional: sort and limit.
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Text indexes (5)}
+	\begin{block}{Create text index and query with regular expression}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+db.cars.createIndex( { "sign" : 1 } )
+db.cars.find( { sign : { $regex: /^IMN..../ } } )
+	\end{lstlisting}
+% More efficient than a collection scan
+% Can be used to query fields without index
+% Differences to $text operator?
+% I think the text operator is text index specific (and possibly optimized?)
+	\end{block}
+\end{frame}
+%%
+
+\section{Data import}
+
+%%
+\begin{frame}
+\frametitle{Data import (1)}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+	\bfseries{Mongo command} & \bfseries{Description} \\
+	\hline
+	 \texttt{mongoimport -d \textless dbName\textgreater{} -c \textless collectionName\textgreater{} -t \textless json | csv | tsv\textgreater{} --file \textless filename\textgreater{}} & Import data with mongoimport \\
+	 \texttt{--host, -h} & Specify remote host \\
+	 \texttt{--port, -p} & Specify port \\
+	 \texttt{--username, -u} & Provide username \\
+	 \texttt{--password, -p} & Provide password \\
+	 \texttt{--db, -d} & Specify the database to import data \\
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+
+%%
+\begin{frame}
+\frametitle{Data import (2)}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+	\bfseries{Mongoimport option} & \bfseries{Description} \\
+	\hline
+	 \texttt{--fields, -f} & Specify a comma-separated list of field names to use as header 
+	 when importing CSV or TSV files \\
+	 \texttt{--type, -t} & Specify the type of file that contains the data to be imported; this can be
+	 JSON, CSV, or TSV files \\
+	 \texttt{--file} & Specify the file that contains the data to be imported \\
+
+	\hline
+\end{tabular}
+
+\end{frame}
+
+
+%%
+\begin{frame}
+\frametitle{Data import (3)}
+
+\begin{tabular}{p{12em}p{12em}}
+	\hline
+	\bfseries{Mongoimport option} & \bfseries{Description} \\
+	\hline
+	 \texttt{--headerline} & In case of CSV or TSV files treat the first line as a header \\
+	 \texttt{--upsert} & Update existing objects if matched \\
+	 % comparison base is the _id field.
+	 \texttt{--jsonArray} & Import data as multiple MongoDB documents within a single JSON array \\
+	 \texttt{--stopOnError} & Stop import if error happens \\
+	 
+	\hline
+\end{tabular}
+
+\end{frame}
+
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data import (4)}
+	\begin{block}{Use mongoimport to import JSON data}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+mongoimport -d CarDB -c cars --file cars.json
+mongoimport -d CarDB -c cars -t json --file cars.json
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data import (5)}
+	\begin{block}{Use mongoimport to import JSON data expressed in the form of an array}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+mongoimport -d CarDB -c cars --file cars.json --jsonArray
+	\end{lstlisting}
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data import (6)}
+	\begin{block}{Use mongoimport to import CSV data}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+mongoimport -d CarDB -c cars -t csv 
+  --file /srv/data/cars.csv
+	\end{lstlisting}
+
+	\end{block}
+\end{frame}
+%%
+
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data import (7)}
+	\begin{block}{Use mongoimport to import TSV data}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+mongoimport -d CarDB -c cars -t tsv 
+  --file /srv/data/cars.csv
+	\end{lstlisting}
+
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data import (8)}
+	\begin{block}{Use mongoimport to import incoming data}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+mongoimport -d CarDB -c cars --stopOnError 
+  --dbpath /srv/mongodb
+	\end{lstlisting}
+
+	\end{block}
+\end{frame}
+%%
+
+
+%%
+\begin{frame}[containsverbatim]
+\frametitle{Data import (9)}
+	\begin{block}{Use mongoimport to import data to remote host}
+	\lstset{language=SQL,basicstyle=\footnotesize,commentstyle=\color{blue}\textit,
+	stringstyle=\color{red}\ttfamily,labelstyle=\tiny}
+	\begin{lstlisting}
+mongoimport -h stereo.dmst.aueb.gr -p 28017 
+-u mfg -p mfgpass -d CarDB -c cars 
+--file /srv/data/data.json
+	\end{lstlisting}
+
+	\end{block}
+\end{frame}
+%%
+
+\section{GUI}
+
+
+%%
+\begin{frame}
+\frametitle{Humongous (1)}
+	\begin{itemize}
+		\item Cloud-based GUI
+		\item Connect to remote MongoDB instance for free
+		\item Perform CRUD operations
+	\end{itemize}
+\end{frame}
+%%
+
+
+
+\end{document}
