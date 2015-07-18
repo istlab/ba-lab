@@ -1,0 +1,2085 @@
+﻿
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title> JKyriakos - Data Charts</title>
+  
+  <script type='text/javascript' src='http://d3js.org/d3.v3.min.js'></script>
+  
+ 
+      
+      <link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+    
+  
+    
+      <script type='text/javascript' src="http://code.jquery.com/jquery-1.10.2.js"></script>
+    
+  
+    
+      <script type='text/javascript' src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    
+  
+    
+      <script type='text/javascript' src="http://nvd3.org/assets/js/nv.d3.js"></script>
+    
+  
+    
+      <link rel="stylesheet" type="text/css" href="http://jqueryui.com/resources/demos/style.css">
+    
+  
+  <style type='text/css'>
+    <style> html {
+    overflow-y: scroll;
+}
+#chart svg {
+    height: 400px;
+}
+/********************
+ * HTML CSS
+ */
+ .combolabel {
+    font-size:10pt;
+    margin: 30px 0 0 0;
+}
+.chartWrap {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+/********************
+  Box shadow and border radius styling
+*/
+ .nvtooltip.with-3d-shadow, .with-3d-shadow .nvtooltip {
+    -moz-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+    -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+    -webkit-border-radius: 6px;
+    -moz-border-radius: 6px;
+    border-radius: 6px;
+}
+/********************
+ * TOOLTIP CSS
+ */
+ .nvtooltip {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 1.0);
+    padding: 1px;
+    border: 1px solid rgba(0, 0, 0, .2);
+    z-index: 10000;
+    font-family: Arial;
+    font-size: 13px;
+    text-align: left;
+    pointer-events: none;
+    white-space: nowrap;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+/*Give tooltips that old fade in transition by
+    putting a "with-transitions" class on the container div.
+*/
+ .nvtooltip.with-transitions, .with-transitions .nvtooltip {
+    transition: opacity 250ms linear;
+    -moz-transition: opacity 250ms linear;
+    -webkit-transition: opacity 250ms linear;
+    transition-delay: 250ms;
+    -moz-transition-delay: 250ms;
+    -webkit-transition-delay: 250ms;
+}
+.nvtooltip.x-nvtooltip, .nvtooltip.y-nvtooltip {
+    padding: 8px;
+}
+.nvtooltip h3 {
+    margin: 0;
+    padding: 4px 14px;
+    line-height: 18px;
+    font-weight: normal;
+    background-color: rgba(247, 247, 247, 0.75);
+    text-align: center;
+    border-bottom: 1px solid #ebebeb;
+    -webkit-border-radius: 5px 5px 0 0;
+    -moz-border-radius: 5px 5px 0 0;
+    border-radius: 5px 5px 0 0;
+}
+.nvtooltip p {
+    margin: 0;
+    padding: 5px 14px;
+    text-align: center;
+}
+.nvtooltip span {
+    display: inline-block;
+    margin: 2px 0;
+}
+.nvtooltip table {
+    margin: 6px;
+    border-spacing:0;
+}
+.nvtooltip table td {
+    padding: 2px 9px 2px 0;
+    vertical-align: middle;
+}
+.nvtooltip table td.key {
+    font-weight:normal;
+}
+.nvtooltip table td.value {
+    text-align: right;
+    font-weight: bold;
+}
+.nvtooltip table tr.highlight td {
+    padding: 1px 9px 1px 0;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-top-style: solid;
+    border-top-width: 1px;
+}
+.nvtooltip table td.legend-color-guide div {
+    width: 8px;
+    height: 8px;
+    vertical-align: middle;
+}
+.nvtooltip .footer {
+    padding: 3px;
+    text-align: center;
+}
+.nvtooltip-pending-removal {
+    position: absolute;
+    pointer-events: none;
+}
+/********************
+ * SVG CSS
+ */
+ svg {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Trying to get SVG to act like a greedy block in all browsers */
+    display: block;
+    width:100%;
+    height:100%;
+}
+svg text {
+    font: normal 12px Arial;
+}
+svg .title {
+    font: bold 14px Arial;
+}
+.nvd3 .nv-background {
+    fill: white;
+    fill-opacity: 0;
+    /*
+  pointer-events: none;
+  */
+}
+.nvd3.nv-noData {
+    font-size: 18px;
+    font-weight: bold;
+}
+/**********
+*  Brush
+*/
+ .nv-brush .extent {
+    fill-opacity: .125;
+    shape-rendering: crispEdges;
+}
+/**********
+*  Legend
+*/
+ .nvd3 .nv-legend .nv-series {
+    cursor: pointer;
+}
+.nvd3 .nv-legend .disabled circle {
+    fill-opacity: 0;
+}
+/**********
+*  Axes
+*/
+ .nvd3 .nv-axis {
+    pointer-events:none;
+}
+.nvd3 .nv-axis path {
+    fill: none;
+    stroke: #000;
+    stroke-opacity: .75;
+    shape-rendering: crispEdges;
+}
+.nvd3 .nv-axis path.domain {
+    stroke-opacity: .75;
+}
+.nvd3 .nv-axis.nv-x path.domain {
+    stroke-opacity: 0;
+}
+.nvd3 .nv-axis line {
+    fill: none;
+    stroke: #e5e5e5;
+    shape-rendering: crispEdges;
+}
+.nvd3 .nv-axis .zero line,
+/*this selector may not be necessary*/
+ .nvd3 .nv-axis line.zero {
+    stroke-opacity: .75;
+}
+.nvd3 .nv-axis .nv-axisMaxMin text {
+    font-weight: bold;
+}
+.nvd3 .x .nv-axis .nv-axisMaxMin text, .nvd3 .x2 .nv-axis .nv-axisMaxMin text, .nvd3 .x3 .nv-axis .nv-axisMaxMin text {
+    text-anchor: middle
+}
+/**********
+*  Brush
+*/
+ .nv-brush .resize path {
+    fill: #eee;
+    stroke: #666;
+}
+/**********
+*  Bars
+*/
+ .nvd3 .nv-bars .negative rect {
+    zfill: brown;
+}
+.nvd3 .nv-bars rect {
+    zfill: steelblue;
+    fill-opacity: .75;
+    transition: fill-opacity 250ms linear;
+    -moz-transition: fill-opacity 250ms linear;
+    -webkit-transition: fill-opacity 250ms linear;
+}
+.nvd3 .nv-bars rect.hover {
+    fill-opacity: 1;
+}
+.nvd3 .nv-bars .hover rect {
+    fill: lightblue;
+}
+.nvd3 .nv-bars text {
+    fill: rgba(0, 0, 0, 0);
+}
+.nvd3 .nv-bars .hover text {
+    fill: rgba(0, 0, 0, 1);
+}
+/**********
+*  Bars
+*/
+ .nvd3 .nv-multibar .nv-groups rect, .nvd3 .nv-multibarHorizontal .nv-groups rect, .nvd3 .nv-discretebar .nv-groups rect {
+    stroke-opacity: 0;
+    transition: fill-opacity 250ms linear;
+    -moz-transition: fill-opacity 250ms linear;
+    -webkit-transition: fill-opacity 250ms linear;
+}
+.nvd3 .nv-multibar .nv-groups rect:hover, .nvd3 .nv-multibarHorizontal .nv-groups rect:hover, .nvd3 .nv-discretebar .nv-groups rect:hover {
+    fill-opacity: 1;
+}
+.nvd3 .nv-discretebar .nv-groups text, .nvd3 .nv-multibarHorizontal .nv-groups text {
+    font-weight: bold;
+    fill: rgba(0, 0, 0, 1);
+    stroke: rgba(0, 0, 0, 0);
+}
+/***********
+*  Pie Chart
+*/
+ .nvd3.nv-pie path {
+    stroke-opacity: 0;
+    transition: fill-opacity 250ms linear, stroke-width 250ms linear, stroke-opacity 250ms linear;
+    -moz-transition: fill-opacity 250ms linear, stroke-width 250ms linear, stroke-opacity 250ms linear;
+    -webkit-transition: fill-opacity 250ms linear, stroke-width 250ms linear, stroke-opacity 250ms linear;
+}
+.nvd3.nv-pie .nv-slice text {
+    stroke: #000;
+    stroke-width: 0;
+}
+.nvd3.nv-pie path {
+    stroke: #fff;
+    stroke-width: 1px;
+    stroke-opacity: 1;
+}
+.nvd3.nv-pie .hover path {
+    fill-opacity: .7;
+}
+.nvd3.nv-pie .nv-label {
+    pointer-events: none;
+}
+.nvd3.nv-pie .nv-label rect {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+}
+/**********
+* Lines
+*/
+ .nvd3 .nv-groups path.nv-line {
+    fill: none;
+    stroke-width: 1.5px;
+    /*
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+
+  transition: stroke-width 250ms linear;
+  -moz-transition: stroke-width 250ms linear;
+  -webkit-transition: stroke-width 250ms linear;
+
+  transition-delay: 250ms
+  -moz-transition-delay: 250ms;
+  -webkit-transition-delay: 250ms;
+  */
+}
+.nvd3 .nv-groups path.nv-line.nv-thin-line {
+    stroke-width: 1px;
+}
+.nvd3 .nv-groups path.nv-area {
+    stroke: none;
+    /*
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+
+  stroke-width: 2.5px;
+  transition: stroke-width 250ms linear;
+  -moz-transition: stroke-width 250ms linear;
+  -webkit-transition: stroke-width 250ms linear;
+
+  transition-delay: 250ms
+  -moz-transition-delay: 250ms;
+  -webkit-transition-delay: 250ms;
+  */
+}
+.nvd3 .nv-line.hover path {
+    stroke-width: 6px;
+}
+/*
+.nvd3.scatter .groups .point {
+  fill-opacity: 0.1;
+  stroke-opacity: 0.1;
+}
+  */
+ .nvd3.nv-line .nvd3.nv-scatter .nv-groups .nv-point {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+}
+.nvd3.nv-scatter.nv-single-point .nv-groups .nv-point {
+    fill-opacity: .5 !important;
+    stroke-opacity: .5 !important;
+}
+.with-transitions .nvd3 .nv-groups .nv-point {
+    transition: stroke-width 250ms linear, stroke-opacity 250ms linear;
+    -moz-transition: stroke-width 250ms linear, stroke-opacity 250ms linear;
+    -webkit-transition: stroke-width 250ms linear, stroke-opacity 250ms linear;
+}
+.nvd3.nv-scatter .nv-groups .nv-point.hover, .nvd3 .nv-groups .nv-point.hover {
+    stroke-width: 7px;
+    fill-opacity: .95 !important;
+    stroke-opacity: .95 !important;
+}
+.nvd3 .nv-point-paths path {
+    stroke: #aaa;
+    stroke-opacity: 0;
+    fill: #eee;
+    fill-opacity: 0;
+}
+.nvd3 .nv-indexLine {
+    cursor: ew-resize;
+}
+/**********
+* Distribution
+*/
+ .nvd3 .nv-distribution {
+    pointer-events: none;
+}
+/**********
+*  Scatter
+*/
+
+/* **Attempting to remove this for useVoronoi(false), need to see if it's required anywhere
+.nvd3 .nv-groups .nv-point {
+  pointer-events: none;
+}
+*/
+ .nvd3 .nv-groups .nv-point.hover {
+    stroke-width: 20px;
+    stroke-opacity: .5;
+}
+.nvd3 .nv-scatter .nv-point.hover {
+    fill-opacity: 1;
+}
+/*
+.nv-group.hover .nv-point {
+  fill-opacity: 1;
+}
+*/
+
+/**********
+*  Stacked Area
+*/
+ .nvd3.nv-stackedarea path.nv-area {
+    fill-opacity: .7;
+    /*
+  stroke-opacity: .65;
+  fill-opacity: 1;
+  */
+    stroke-opacity: 0;
+    transition: fill-opacity 250ms linear, stroke-opacity 250ms linear;
+    -moz-transition: fill-opacity 250ms linear, stroke-opacity 250ms linear;
+    -webkit-transition: fill-opacity 250ms linear, stroke-opacity 250ms linear;
+    /*
+  transition-delay: 500ms;
+  -moz-transition-delay: 500ms;
+  -webkit-transition-delay: 500ms;
+  */
+}
+.nvd3.nv-stackedarea path.nv-area.hover {
+    fill-opacity: .9;
+    /*
+  stroke-opacity: .85;
+  */
+}
+/*
+.d3stackedarea .groups path {
+  stroke-opacity: 0;
+}
+  */
+ .nvd3.nv-stackedarea .nv-groups .nv-point {
+    stroke-opacity: 0;
+    fill-opacity: 0;
+}
+/*
+.nvd3.nv-stackedarea .nv-groups .nv-point.hover {
+  stroke-width: 20px;
+  stroke-opacity: .75;
+  fill-opacity: 1;
+}*/
+
+/**********
+*  Line Plus Bar
+*/
+ .nvd3.nv-linePlusBar .nv-bar rect {
+    fill-opacity: .75;
+}
+.nvd3.nv-linePlusBar .nv-bar rect:hover {
+    fill-opacity: 1;
+}
+/**********
+*  Bullet
+*/
+ .nvd3.nv-bullet {
+    font: 10px sans-serif;
+}
+.nvd3.nv-bullet .nv-measure {
+    fill-opacity: .8;
+}
+.nvd3.nv-bullet .nv-measure:hover {
+    fill-opacity: 1;
+}
+.nvd3.nv-bullet .nv-marker {
+    stroke: #000;
+    stroke-width: 2px;
+}
+.nvd3.nv-bullet .nv-markerTriangle {
+    stroke: #000;
+    fill: #fff;
+    stroke-width: 1.5px;
+}
+.nvd3.nv-bullet .nv-tick line {
+    stroke: #666;
+    stroke-width: .5px;
+}
+.nvd3.nv-bullet .nv-range.nv-s0 {
+    fill: #eee;
+}
+.nvd3.nv-bullet .nv-range.nv-s1 {
+    fill: #ddd;
+}
+.nvd3.nv-bullet .nv-range.nv-s2 {
+    fill: #ccc;
+}
+.nvd3.nv-bullet .nv-title {
+    font-size: 14px;
+    font-weight: bold;
+}
+.nvd3.nv-bullet .nv-subtitle {
+    fill: #999;
+}
+.nvd3.nv-bullet .nv-range {
+    fill: #bababa;
+    fill-opacity: .4;
+}
+.nvd3.nv-bullet .nv-range:hover {
+    fill-opacity: .7;
+}
+/**********
+* Sparkline
+*/
+ .nvd3.nv-sparkline path {
+    fill: none;
+}
+.nvd3.nv-sparklineplus g.nv-hoverValue {
+    pointer-events: none;
+}
+.nvd3.nv-sparklineplus .nv-hoverValue line {
+    stroke: #333;
+    stroke-width: 1.5px;
+}
+.nvd3.nv-sparklineplus, .nvd3.nv-sparklineplus g {
+    pointer-events: all;
+}
+.nvd3 .nv-hoverArea {
+    fill-opacity: 0;
+    stroke-opacity: 0;
+}
+.nvd3.nv-sparklineplus .nv-xValue, .nvd3.nv-sparklineplus .nv-yValue {
+    /*
+  stroke: #666;
+  */
+    stroke-width: 0;
+    font-size: .9em;
+    font-weight: normal;
+}
+.nvd3.nv-sparklineplus .nv-yValue {
+    stroke: #f66;
+}
+.nvd3.nv-sparklineplus .nv-maxValue {
+    stroke: #2ca02c;
+    fill: #2ca02c;
+}
+.nvd3.nv-sparklineplus .nv-minValue {
+    stroke: #d62728;
+    fill: #d62728;
+}
+.nvd3.nv-sparklineplus .nv-currentValue {
+    /*
+  stroke: #444;
+  fill: #000;
+  */
+    font-weight: bold;
+    font-size: 1.1em;
+}
+/**********
+* historical stock
+*/
+ .nvd3.nv-ohlcBar .nv-ticks .nv-tick {
+    stroke-width: 2px;
+}
+.nvd3.nv-ohlcBar .nv-ticks .nv-tick.hover {
+    stroke-width: 4px;
+}
+.nvd3.nv-ohlcBar .nv-ticks .nv-tick.positive {
+    stroke: #2ca02c;
+}
+.nvd3.nv-ohlcBar .nv-ticks .nv-tick.negative {
+    stroke: #d62728;
+}
+.nvd3.nv-historicalStockChart .nv-axis .nv-axislabel {
+    font-weight: bold;
+}
+.nvd3.nv-historicalStockChart .nv-dragTarget {
+    fill-opacity: 0;
+    stroke: none;
+    cursor: move;
+}
+.nvd3 .nv-brush .extent {
+    /*
+  cursor: ew-resize !important;
+  */
+    fill-opacity: 0 !important;
+}
+.nvd3 .nv-brushBackground rect {
+    stroke: #000;
+    stroke-width: .4;
+    fill: #fff;
+    fill-opacity: .7;
+}
+/**********
+* Indented Tree
+*/
+
+/**
+ * TODO: the following 3 selectors are based on classes used in the example.  I should either make them standard and leave them here, or move to a CSS file not included in the library
+ */
+ .nvd3.nv-indentedtree .name {
+    margin-left: 5px;
+}
+.nvd3.nv-indentedtree .clickable {
+    color: #08C;
+    cursor: pointer;
+}
+.nvd3.nv-indentedtree span.clickable:hover {
+    color: #005580;
+    text-decoration: underline;
+}
+.nvd3.nv-indentedtree .nv-childrenCount {
+    display: inline-block;
+    margin-left: 5px;
+}
+.nvd3.nv-indentedtree .nv-treeicon {
+    cursor: pointer;
+    /*
+  cursor: n-resize;
+  */
+}
+.nvd3.nv-indentedtree .nv-treeicon.nv-folded {
+    cursor: pointer;
+    /*
+  cursor: s-resize;
+  */
+}
+/**********
+* Parallel Coordinates
+*/
+ .nvd3 .background path {
+    fill: none;
+    stroke: #ccc;
+    stroke-opacity: .4;
+    shape-rendering: crispEdges;
+}
+.nvd3 .foreground path {
+    fill: none;
+    stroke: steelblue;
+    stroke-opacity: .7;
+}
+.nvd3 .brush .extent {
+    fill-opacity: .3;
+    stroke: #fff;
+    shape-rendering: crispEdges;
+}
+.nvd3 .axis line, .axis path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+.nvd3 .axis text {
+    text-shadow: 0 1px 0 #fff;
+}
+/****
+Interactive Layer
+*/
+ .nvd3 .nv-interactiveGuideLine {
+    pointer-events:none;
+}
+.nvd3 line.nv-guideline {
+    stroke: #ccc;
+}
+</style>
+  </style>
+  
+
+
+<script type='text/javascript'>//<![CDATA[ 
+window.onload=function(){
+/*
+ Here we initialize the jQuery dropdown functionality to select chart option
+ */
+
+/*This statement ensures to initialize dropdown feature for chartOpt object on page load
+ */
+$(function () {
+    $("#chartOpt").selectmenu({
+        change: function (event, data) {
+            // On dropdown option change, system first clear the graph output and renders the selected option
+            nv.customUtils.clearGraph();
+            nv.customUtils.createGraph(myDataMap[data.item.value]);
+        }
+    });
+
+});
+
+/*
+ * The graph render mechanism uses the NVD3 open source framework. The NVD3 requires the D3 open source framework. System uses the two predefined variables, the 'nv' for NVD3 and 'd3' for D3 framework. The 'customUtils' contains functions for the statistics data graph representation. */
+nv.customUtils = {
+    /* Function used to reset graph's output */
+    clearGraph: function () {
+        console.log('graph cleared.');
+        //Loads graph DOM object by its class selector 'chartSvgSelector'
+        $(".chartSvgSelector").empty();
+    },
+    /* Function to render the statistics data. The 'dMap' input holds the graph type (atribute 'dMap.mode') and the associated data vector (attribute 'dMap.data'). Available graph types are: (a) 'linePlusBar' for two y-axis graph, one rendered as line and the other as bars, (b) 'multiBar' for multi y-axis vector graph rendered as grouped or stacked bars. */
+    createGraph: function (dMap) {
+        if (dMap) {
+            var obj = this;
+            switch (dMap.mode) {
+                case "linePlusBar":
+                    nv.addGraph(function () {
+                        obj.createLinePlusBarGraph(dMap.data);
+                    });
+                    break;
+                case "multiBar":
+                    nv.addGraph(function () {
+                        obj.createMultiBarGraph(obj.createMultiBarDatum(dMap.data));
+                    });
+                    break;
+                case "lineChart":
+                    nv.addGraph(function () {
+                        obj.createLineChart(obj.createLineChartDatum(dMap.data));
+                    });
+                    break;
+                default:
+                    break;
+            }
+        }
+    },
+
+
+    /* Function to create multi bar graph. The input 'data' contains the JSON data map.*/
+    createMultiBarGraph: function (data) {
+        var chart = nv.models.multiBarChart()
+            .transitionDuration(350)
+            .reduceXTicks(true) //If 'false', every single x-axis tick label will be rendered.
+        .rotateLabels(0) //Angle to rotate x-axis labels.
+        .showControls(true) //Allow user to switch between 'Grouped' and 'Stacked' mode.
+        .groupSpacing(0.1) //Distance between each group of bars.
+        ;
+
+        chart.xAxis.axisLabel("Time (in quarters)"); //jiannis
+        //.tickFormat(d3.format(',f'));
+
+        
+        chart.yAxis.tickFormat(d3.format(',.1f'));
+        
+        
+
+        d3.select('#chart svg')
+            .datum(data).transition()
+            .duration(350)
+            .call(chart);
+
+        nv.utils.windowResize(chart.update);
+
+        return chart;
+
+    },
+    /* Function to create the double y-axis vectored line and bars graph. The input data contains the JSON data map.*/
+    createLinePlusBarGraph: function (data) {
+        var chart = nv.models.linePlusBarChart()
+            .margin({
+            top: 30,
+            right: 60,
+            bottom: 50,
+            left: 70
+        })
+        //We can set x data accessor to use index. Reason? So the bars all appear evenly spaced.
+        .x(function (d, i) {
+            // return d[i];
+            return i;
+        })
+            .y(function (d, i) {
+            return d[1]
+        });
+
+        chart.xAxis.axisLabel("Time (in quarters)") //jiannis
+        .tickFormat(function (d) {
+            // Show x-axis as is            
+            return data[0].values[d] && data[0].values[d][0] || 0;
+        });
+
+        chart.y1Axis.tickFormat(d3.format(',f'));
+
+        chart.y2Axis.tickFormat(function (d) {
+            return '%' + d3.format(',02f')(d)
+        });
+
+        chart.bars.forceY([0]);
+        chart.lines.forceY([0]); //jiannis
+
+        d3.select('#chart svg')
+            .datum(data)
+            .transition()
+            .duration(350)
+            .call(chart);
+
+        nv.utils.windowResize(chart.update);
+
+        return chart;
+
+    },
+
+    /* Function to create the line chart. The input data contains the JSON data map.*/
+
+    createLineChart: function (data) {
+        var chart = nv.models.lineChart()
+        //.margin({left: 100}) //Adjust chart margins to give the x-axis some breathing room.
+        //.useInteractiveGuideline(true) //We want nice looking tooltips and a guideline!        
+        .transitionDuration(350) //how fast do you want the lines to transition?
+        .showLegend(true) //Show the legend, allowing users to turn on/off line series.
+        .showYAxis(true) //Show the y-axis
+        .showXAxis(true) //Show the x-axis
+        .x(function (d, i) {
+            return i;
+        });
+
+        chart.xAxis.axisLabel("Time (in quarters)") //jiannis
+        .tickFormat(function (d) {
+            try {
+                //Setup to show x-axis literal values 
+                return data[0].values[d].x;
+            } catch (err) {
+                //If fails to extract x-axis literals show default numbering
+                return d;
+            }
+        });
+
+        //jiannis
+        // lines limits and modify Y axes 
+
+        var yScale = d3.scale.linear()
+            .domain([
+        d3.min(data, function (d) {
+            return d.y;
+        }) - 100,
+        d3.max(data, function (d) {
+            return d.y;
+        }) + 100])
+            .range([
+        d3.min(data, function (d) {
+            return d.y;
+        }),
+        d3.max(data, function (d) {
+            return d.y;
+        })]);
+
+        chart.yAxis
+        // .axisLabel('Score')
+        //.scale(yScale)
+        //.tickFormat(d3.format('.02f'));
+        .tickFormat(function (d) {
+            return '%' + d3.format(',02f')(d)
+        });
+
+        //jiannis
+
+        d3.select('#chart svg') //our svg
+        .datum(data) //Populate the <svg> element with chart data...
+        .call(chart); //Finally, render the chart!
+
+        //Update the chart when window resizes.
+        nv.utils.windowResize(function () {
+            chart.update()
+        });
+        return chart;
+    },
+
+
+
+    /*Function to tranform the input JSON data map into a valid NVD3 multi bar JSON structure. It's crucial to wrap data with this function before using the 'createMultiBarGraph' method. */
+    createMultiBarDatum: function (jsonArray) {
+
+        return $.map(jsonArray, function (data, i) {
+            return {
+                key: data.key,
+                values: $.map(data.values, function (d, i) {
+                    return {
+                        x: d[0],
+                        y: d[1]
+                    }
+                })
+            };
+        });
+    },
+
+    /*Function to tranform the input JSON data map into a valid NVD3 line chart JSON structure. It's crucial to wrap data with this function before using the 'createLineChart' method. */
+    createLineChartDatum: function (jsonArray) {
+        var dd = [];
+        $.each(jsonArray, function (i, data) {
+            var vv = [];
+            $.each(data.values, function (i, d) {
+                vv.push({
+                    x: d[0],
+                    y: d[1]
+                });
+            });
+            dd.push({
+                key: data.key,
+                values: vv
+            });
+        });
+        return dd;
+    }
+};
+
+
+
+
+/*
+ * Modify here to setup custom JSON data as js array, not file.
+ */
+// Gross Domestic Product and Total Unemployment Rate datum
+var GDTURdatum = [{
+    "key": "Gross Domestic Product Million Euro(Non-seasonally adjusted data)",
+        "bar": true,
+        "values": [
+        ["2001 Q1", 35174],
+        ["2001 Q2", 36616],
+        ["2001 Q3", 39685],
+        ["2001 Q4", 40513],
+        ["2002 Q1", 37140],
+        ["2002 Q2", 39454],
+        ["2002 Q3", 41940],
+        ["2002 Q4", 43741],
+        ["2003 Q1", 40747],
+        ["2003 Q2", 43240],
+        ["2003 Q3", 46477],
+        ["2003 Q4", 48108],
+        ["2004 Q1", 44584],
+        ["2004 Q2", 47361],
+        ["2004 Q3", 50512],
+        ["2004 Q4", 50557],
+        ["2005 Q1", 45711],
+        ["2005 Q2", 49026],
+        ["2005 Q3", 51616],
+        ["2005 Q4", 52800],
+        ["2006 Q1", 49926],
+        ["2006 Q2", 53874],
+        ["2006 Q3", 55920],
+        ["2006 Q4", 58111],
+        ["2007 Q1", 52873],
+        ["2007 Q2", 58261],
+        ["2007 Q3", 59921],
+        ["2007 Q4", 61776],
+        ["2008 Q1", 56017],
+        ["2008 Q2", 60778],
+        ["2008 Q3", 62789],
+        ["2008 Q4", 62512],
+        ["2009 Q1", 53563],
+        ["2009 Q2", 60074],
+        ["2009 Q3", 61072],
+        ["2009 Q4", 62722],
+        ["2010 Q1", 54490],
+        ["2010 Q2", 57411],
+        ["2010 Q3", 57570],
+        ["2010 Q4", 56739],
+        ["2011 Q1", 49139],
+        ["2011 Q2", 53152],
+        ["2011 Q3", 53727],
+        ["2011 Q4", 51734],
+        ["2012 Q1", 45922],
+        ["2012 Q2", 49251],
+        ["2012 Q3", 50464],
+        ["2012 Q4", 48567],
+        ["2013 Q1", 43059],
+        ["2013 Q2", 46420],
+        ["2013 Q3", 47722],
+        ["2013 Q4", 45236],
+        ["2014 Q1", 41394],
+        ["2014 Q2", 44591],
+        ["2014 Q3", 48213],
+        ["2014 Q4", 44884]
+    ]
+}, {
+    "key": "Total Unemployment Rate",
+        "values": [
+        ["2001 Q1", 11.2],
+        ["2001 Q2", 10.5],
+        ["2001 Q3", 10.2],
+        ["2001 Q4", 11.2],
+        ["2002 Q1", 11.4],
+        ["2002 Q2", 10],
+        ["2002 Q3", 9.8],
+        ["2002 Q4", 10.2],
+        ["2003 Q1", 10.4],
+        ["2003 Q2", 9.4],
+        ["2003 Q3", 9.3],
+        ["2003 Q4", 10],
+        ["2004 Q1", 11.4],
+        ["2004 Q2", 10.3],
+        ["2004 Q3", 10.2],
+        ["2004 Q4", 10.5],
+        ["2005 Q1", 10.5],
+        ["2005 Q2", 9.8],
+        ["2005 Q3", 9.8],
+        ["2005 Q4", 9.9],
+        ["2006 Q1", 9.8],
+        ["2006 Q2", 8.9],
+        ["2006 Q3", 8.4],
+        ["2006 Q4", 8.9],
+        ["2007 Q1", 9.2],
+        ["2007 Q2", 8.2],
+        ["2007 Q3", 8],
+        ["2007 Q4", 8.2],
+        ["2008 Q1", 8.4],
+        ["2008 Q2", 7.3],
+        ["2008 Q3", 7.3],
+        ["2008 Q4", 8],
+        ["2009 Q1", 9.5],
+        ["2009 Q2", 9],
+        ["2009 Q3", 9.4],
+        ["2009 Q4", 10.5],
+        ["2010 Q1", 11.9],
+        ["2010 Q2", 12],
+        ["2010 Q3", 12.6],
+        ["2010 Q4", 14.4],
+        ["2011 Q1", 16.1],
+        ["2011 Q2", 16.5],
+        ["2011 Q3", 17.9],
+        ["2011 Q4", 20.9],
+        ["2012 Q1", 22.8],
+        ["2012 Q2", 23.8],
+        ["2012 Q3", 24.9],
+        ["2012 Q4", 26.2],
+        ["2013 Q1", 27.6],
+        ["2013 Q2", 27.3],
+        ["2013 Q3", 27.2],
+        ["2013 Q4", 27.8],
+        ["2014 Q1", 27.8],
+        ["2014 Q2", 26.6],
+        ["2014 Q3", 25.5],
+        ["2014 Q4", 26.1]
+    ]
+}];
+
+var PSTSectorDatum = [{
+    "key": "Primary Sector",
+        "values": [
+        ["2001 Q1", 680.3],
+        ["2001 Q2", 670.2],
+        ["2001 Q3", 666.6],
+        ["2001 Q4", 648],
+        ["2002 Q1", 642.2],
+        ["2002 Q2", 652],
+        ["2002 Q3", 660.9],
+        ["2002 Q4", 656],
+        ["2003 Q1", 660.9],
+        ["2003 Q2", 656.3],
+        ["2003 Q3", 657],
+        ["2003 Q4", 654.2],
+        ["2004 Q1", 540.6],
+        ["2004 Q2", 545.6],
+        ["2004 Q3", 542.5],
+        ["2004 Q4", 545.2],
+        ["2005 Q1", 544.7],
+        ["2005 Q2", 542.9],
+        ["2005 Q3", 543.4],
+        ["2005 Q4", 530.2],
+        ["2006 Q1", 535.7],
+        ["2006 Q2", 533.8],
+        ["2006 Q3", 528],
+        ["2006 Q4", 525.8],
+        ["2007 Q1", 525.5],
+        ["2007 Q2", 519.3],
+        ["2007 Q3", 510],
+        ["2007 Q4", 513.5],
+        ["2008 Q1", 516.1],
+        ["2008 Q2", 516],
+        ["2008 Q3", 510.5],
+        ["2008 Q4", 512.5],
+        ["2009 Q1", 517.7],
+        ["2009 Q2", 526],
+        ["2009 Q3", 541.2],
+        ["2009 Q4", 546.6],
+        ["2010 Q1", 557.7],
+        ["2010 Q2", 546.6],
+        ["2010 Q3", 545.5],
+        ["2010 Q4", 527],
+        ["2011 Q1", 512.9],
+        ["2011 Q2", 503.6],
+        ["2011 Q3", 497.3],
+        ["2011 Q4", 488.9],
+        ["2012 Q1", 480.8],
+        ["2012 Q2", 484.3],
+        ["2012 Q3", 481.7],
+        ["2012 Q4", 475.2],
+        ["2013 Q1", 475.4],
+        ["2013 Q2", 481.1],
+        ["2013 Q3", 488.8],
+        ["2013 Q4", 478.9],
+        ["2014 Q1", 479.6],
+        ["2014 Q2", 475.9],
+        ["2014 Q3", 483.6],
+        ["2014 Q4", 480.4]
+    ]
+},
+
+
+{
+    "key": "Secondary Sector",
+        "values": [
+        ["2001 Q1", 970.9],
+        ["2001 Q2", 974.1],
+        ["2001 Q3", 966.1],
+        ["2001 Q4", 962],
+        ["2002 Q1", 959.8],
+        ["2002 Q2", 976.5],
+        ["2002 Q3", 982],
+        ["2002 Q4", 979.1],
+        ["2003 Q1", 978.6],
+        ["2003 Q2", 984.3],
+        ["2003 Q3", 988],
+        ["2003 Q4", 988],
+        ["2004 Q1", 968.7],
+        ["2004 Q2", 990.3],
+        ["2004 Q3", 987.3],
+        ["2004 Q4", 986],
+        ["2005 Q1", 999.8],
+        ["2005 Q2", 997.8],
+        ["2005 Q3", 992.1],
+        ["2005 Q4", 990.1],
+        ["2006 Q1", 984.6],
+        ["2006 Q2", 995.3],
+        ["2006 Q3", 1002],
+        ["2006 Q4", 1005.9],
+        ["2007 Q1", 1010.7],
+        ["2007 Q2", 1019.5],
+        ["2007 Q3", 1036],
+        ["2007 Q4", 1031.3],
+        ["2008 Q1", 1028.8],
+        ["2008 Q2", 1031.2],
+        ["2008 Q3", 1031.8],
+        ["2008 Q4", 1005.9],
+        ["2009 Q1", 979.6],
+        ["2009 Q2", 965.7],
+        ["2009 Q3", 970.7],
+        ["2009 Q4", 935],
+        ["2010 Q1", 894.9],
+        ["2010 Q2", 883.2],
+        ["2010 Q3", 852],
+        ["2010 Q4", 809.2],
+        ["2011 Q1", 760.4],
+        ["2011 Q2", 729.3],
+        ["2011 Q3", 712.6],
+        ["2011 Q4", 666.4],
+        ["2012 Q1", 641.1],
+        ["2012 Q2", 615],
+        ["2012 Q3", 607.7],
+        ["2012 Q4", 581.2],
+        ["2013 Q1", 558.3],
+        ["2013 Q2", 552.3],
+        ["2013 Q3", 542.1],
+        ["2013 Q4", 533.7],
+        ["2014 Q1", 527],
+        ["2014 Q2", 531.8],
+        ["2014 Q3", 533.1],
+        ["2014 Q4", 526.8]
+    ]
+},
+
+
+{
+    "key": "Tertiary Sector",
+        "values": [
+        ["2001 Q1", 2555.5],
+        ["2001 Q2", 2579.4],
+        ["2001 Q3", 2593.3],
+        ["2001 Q4", 2542.3],
+        ["2002 Q1", 2568.2],
+        ["2002 Q2", 2653.7],
+        ["2002 Q3", 2668.8],
+        ["2002 Q4", 2660.4],
+        ["2003 Q1", 2663.9],
+        ["2003 Q2", 2725.5],
+        ["2003 Q3", 2743.3],
+        ["2003 Q4", 2712.6],
+        ["2004 Q1", 2821.1],
+        ["2004 Q2", 2874.2],
+        ["2004 Q3", 2886.3],
+        ["2004 Q4", 2870.5],
+        ["2005 Q1", 2850.7],
+        ["2005 Q2", 2914.8],
+        ["2005 Q3", 2925.5],
+        ["2005 Q4", 2942.2],
+        ["2006 Q1", 2961.7],
+        ["2006 Q2", 3002.5],
+        ["2006 Q3", 3037.9],
+        ["2006 Q4", 2996.9],
+        ["2007 Q1", 2975.4],
+        ["2007 Q2", 3033.6],
+        ["2007 Q3", 3049.8],
+        ["2007 Q4", 3031.6],
+        ["2008 Q1", 3022.3],
+        ["2008 Q2", 3090.1],
+        ["2008 Q3", 3097.3],
+        ["2008 Q4", 3079.4],
+        ["2009 Q1", 3048.3],
+        ["2009 Q2", 3093],
+        ["2009 Q3", 3073.4],
+        ["2009 Q4", 3026.9],
+        ["2010 Q1", 2993.5],
+        ["2010 Q2", 3006.8],
+        ["2010 Q3", 3000.5],
+        ["2010 Q4", 2942.3],
+        ["2011 Q1", 2892.2],
+        ["2011 Q2", 2891.3],
+        ["2011 Q3", 2830.8],
+        ["2011 Q4", 2731.6],
+        ["2012 Q1", 2663.1],
+        ["2012 Q2", 2630.6],
+        ["2012 Q3", 2578.5],
+        ["2012 Q4", 2540.7],
+        ["2013 Q1", 2470.4],
+        ["2013 Q2", 2501.6],
+        ["2013 Q3", 2502.7],
+        ["2013 Q4", 2467.3],
+        ["2014 Q1", 2477.1],
+        ["2014 Q2", 2531.3],
+        ["2014 Q3", 2570.2],
+        ["2014 Q4", 2528.1]
+    ]
+}];
+
+//Unemployment x1000 Age Datum
+var U1000Datum = [
+
+{
+    "key": "Unemployment Age 15-19",
+        "values": [
+        ["2001 Q1", 31.9],
+        ["2001 Q2", 32.1],
+        ["2001 Q3", 31.2],
+        ["2001 Q4", 30.6],
+        ["2002 Q1", 28.9],
+        ["2002 Q2", 24.2],
+        ["2002 Q3", 27.2],
+        ["2002 Q4", 26.6],
+        ["2003 Q1", 27.4],
+        ["2003 Q2", 21.8],
+        ["2003 Q3", 21.5],
+        ["2003 Q4", 20.8],
+        ["2004 Q1", 33.3],
+        ["2004 Q2", 25.7],
+        ["2004 Q3", 23.1],
+        ["2004 Q4", 20.6],
+        ["2005 Q1", 21],
+        ["2005 Q2", 19.9],
+        ["2005 Q3", 21.2],
+        ["2005 Q4", 22.3],
+        ["2006 Q1", 20.2],
+        ["2006 Q2", 20.5],
+        ["2006 Q3", 19],
+        ["2006 Q4", 18.8],
+        ["2007 Q1", 17.5],
+        ["2007 Q2", 14.8],
+        ["2007 Q3", 14.6],
+        ["2007 Q4", 15.4],
+        ["2008 Q1", 15.3],
+        ["2008 Q2", 13.7],
+        ["2008 Q3", 11],
+        ["2008 Q4", 15],
+        ["2009 Q1", 16.8],
+        ["2009 Q2", 15.2],
+        ["2009 Q3", 16.3],
+        ["2009 Q4", 16.6],
+        ["2010 Q1", 15.5],
+        ["2010 Q2", 16.1],
+        ["2010 Q3", 16.8],
+        ["2010 Q4", 20.1],
+        ["2011 Q1", 21],
+        ["2011 Q2", 22.1],
+        ["2011 Q3", 25.1],
+        ["2011 Q4", 28.5],
+        ["2012 Q1", 30.5],
+        ["2012 Q2", 29.2],
+        ["2012 Q3", 31.9],
+        ["2012 Q4", 30.7],
+        ["2013 Q1", 31.5],
+        ["2013 Q2", 31.7],
+        ["2013 Q3", 32.2],
+        ["2013 Q4", 30.4],
+        ["2014 Q1", 27.8],
+        ["2014 Q2", 24.9],
+        ["2014 Q3", 20.5],
+        ["2014 Q4", 18.4]
+
+
+    ]
+},
+
+
+{
+    "key": "Unemployment Age 20-24",
+        "values": [
+        ["2001 Q1", 123.3],
+        ["2001 Q2", 118.2],
+        ["2001 Q3", 115.2],
+        ["2001 Q4", 119.6],
+        ["2002 Q1", 122.5],
+        ["2002 Q2", 110.7],
+        ["2002 Q3", 105.7],
+        ["2002 Q4", 104.7],
+        ["2003 Q1", 107.5],
+        ["2003 Q2", 102.6],
+        ["2003 Q3", 105.2],
+        ["2003 Q4", 108.5],
+        ["2004 Q1", 116.6],
+        ["2004 Q2", 109.3],
+        ["2004 Q3", 101],
+        ["2004 Q4", 107.3],
+        ["2005 Q1", 99],
+        ["2005 Q2", 94.6],
+        ["2005 Q3", 95.8],
+        ["2005 Q4", 95.3],
+        ["2006 Q1", 92.2],
+        ["2006 Q2", 83.3],
+        ["2006 Q3", 81.8],
+        ["2006 Q4", 87.5],
+        ["2007 Q1", 83.1],
+        ["2007 Q2", 71.5],
+        ["2007 Q3", 73],
+        ["2007 Q4", 71.2],
+        ["2008 Q1", 71.6],
+        ["2008 Q2", 63.2],
+        ["2008 Q3", 67.6],
+        ["2008 Q4", 70],
+        ["2009 Q1", 78.6],
+        ["2009 Q2", 74.7],
+        ["2009 Q3", 77],
+        ["2009 Q4", 86.1],
+        ["2010 Q1", 94.4],
+        ["2010 Q2", 95],
+        ["2010 Q3", 99.8],
+        ["2010 Q4", 109.3],
+        ["2011 Q1", 113.4],
+        ["2011 Q2", 121.3],
+        ["2011 Q3", 127.2],
+        ["2011 Q4", 140.7],
+        ["2012 Q1", 145.3],
+        ["2012 Q2", 148.5],
+        ["2012 Q3", 153.5],
+        ["2012 Q4", 158.1],
+        ["2013 Q1", 160.6],
+        ["2013 Q2", 154.6],
+        ["2013 Q3", 147.3],
+        ["2013 Q4", 146.1],
+        ["2014 Q1", 144.3],
+        ["2014 Q2", 134.1],
+        ["2014 Q3", 133.9],
+        ["2014 Q4", 137.6]
+
+    ]
+},
+
+
+{
+    "key": "Unemployment Age 25-29",
+        "values": [
+        ["2001 Q1", 116],
+        ["2001 Q2", 108.9],
+        ["2001 Q3", 107.3],
+        ["2001 Q4", 119.9],
+        ["2002 Q1", 116.4],
+        ["2002 Q2", 109.9],
+        ["2002 Q3", 110.4],
+        ["2002 Q4", 116.1],
+        ["2003 Q1", 112.1],
+        ["2003 Q2", 106.2],
+        ["2003 Q3", 107.1],
+        ["2003 Q4", 119.6],
+        ["2004 Q1", 112.1],
+        ["2004 Q2", 107.5],
+        ["2004 Q3", 110.3],
+        ["2004 Q4", 111.7],
+        ["2005 Q1", 109.8],
+        ["2005 Q2", 101.5],
+        ["2005 Q3", 103.5],
+        ["2005 Q4", 101.4],
+        ["2006 Q1", 103],
+        ["2006 Q2", 96.5],
+        ["2006 Q3", 95.2],
+        ["2006 Q4", 93.5],
+        ["2007 Q1", 99.6],
+        ["2007 Q2", 98.1],
+        ["2007 Q3", 96.3],
+        ["2007 Q4", 98.8],
+        ["2008 Q1", 96.8],
+        ["2008 Q2", 86.6],
+        ["2008 Q3", 84.1],
+        ["2008 Q4", 87],
+        ["2009 Q1", 99.3],
+        ["2009 Q2", 94.7],
+        ["2009 Q3", 102.7],
+        ["2009 Q4", 109.5],
+        ["2010 Q1", 117.5],
+        ["2010 Q2", 118.8],
+        ["2010 Q3", 128.3],
+        ["2010 Q4", 146.3],
+        ["2011 Q1", 163.8],
+        ["2011 Q2", 171.1],
+        ["2011 Q3", 189.5],
+        ["2011 Q4", 210.5],
+        ["2012 Q1", 214.3],
+        ["2012 Q2", 219.3],
+        ["2012 Q3", 228.3],
+        ["2012 Q4", 232.6],
+        ["2013 Q1", 235.8],
+        ["2013 Q2", 253.7],
+        ["2013 Q3", 245.7],
+        ["2013 Q4", 248.1],
+        ["2014 Q1", 232.7],
+        ["2014 Q2", 218.6],
+        ["2014 Q3", 218.9],
+        ["2014 Q4", 220.9]
+
+    ]
+}, {
+    "key": "Unemployment Age 30-44",
+        "values": [
+        ["2001 Q1", 181.2],
+        ["2001 Q2", 162.2],
+        ["2001 Q3", 159.2],
+        ["2001 Q4", 174.8],
+        ["2002 Q1", 184.6],
+        ["2002 Q2", 160.6],
+        ["2002 Q3", 160.1],
+        ["2002 Q4", 169.1],
+        ["2003 Q1", 177.2],
+        ["2003 Q2", 159.3],
+        ["2003 Q3", 159.1],
+        ["2003 Q4", 167],
+        ["2004 Q1", 206.3],
+        ["2004 Q2", 186],
+        ["2004 Q3", 187.7],
+        ["2004 Q4", 190.4],
+        ["2005 Q1", 195.3],
+        ["2005 Q2", 185.4],
+        ["2005 Q3", 185.6],
+        ["2005 Q4", 185.9],
+        ["2006 Q1", 185.1],
+        ["2006 Q2", 167.5],
+        ["2006 Q3", 159],
+        ["2006 Q4", 169.5],
+        ["2007 Q1", 178.8],
+        ["2007 Q2", 155.3],
+        ["2007 Q3", 149.6],
+        ["2007 Q4", 153.9],
+        ["2008 Q1", 159.9],
+        ["2008 Q2", 139.6],
+        ["2008 Q3", 140.1],
+        ["2008 Q4", 156.4],
+        ["2009 Q1", 186.9],
+        ["2009 Q2", 176.5],
+        ["2009 Q3", 182.5],
+        ["2009 Q4", 205.9],
+        ["2010 Q1", 242.3],
+        ["2010 Q2", 242.3],
+        ["2010 Q3", 252.5],
+        ["2010 Q4", 291.1],
+        ["2011 Q1", 327.5],
+        ["2011 Q2", 324.9],
+        ["2011 Q3", 351.1],
+        ["2011 Q4", 414.8],
+        ["2012 Q1", 467],
+        ["2012 Q2", 486.2],
+        ["2012 Q3", 504.4],
+        ["2012 Q4", 538.6],
+        ["2013 Q1", 562.4],
+        ["2013 Q2", 549.9],
+        ["2013 Q3", 558],
+        ["2013 Q4", 565.4],
+        ["2014 Q1", 570.4],
+        ["2014 Q2", 544.9],
+        ["2014 Q3", 524],
+        ["2014 Q4", 521.9]
+
+    ]
+},
+
+
+{
+    "key": "Unemployment Age 45-64",
+        "values": [
+        ["2001 Q1", 78.5],
+        ["2001 Q2", 70.6],
+        ["2001 Q3", 67.5],
+        ["2001 Q4", 79.8],
+        ["2002 Q1", 83],
+        ["2002 Q2", 68.2],
+        ["2002 Q3", 66.3],
+        ["2002 Q4", 70.1],
+        ["2003 Q1", 75.9],
+        ["2003 Q2", 62.5],
+        ["2003 Q3", 57.7],
+        ["2003 Q4", 66.7],
+        ["2004 Q1", 89.3],
+        ["2004 Q2", 77.5],
+        ["2004 Q3", 77.3],
+        ["2004 Q4", 83.6],
+        ["2005 Q1", 91],
+        ["2005 Q2", 79.2],
+        ["2005 Q3", 79.2],
+        ["2005 Q4", 82.1],
+        ["2006 Q1", 86.1],
+        ["2006 Q2", 71.9],
+        ["2006 Q3", 65.3],
+        ["2006 Q4", 72.6],
+        ["2007 Q1", 79.2],
+        ["2007 Q2", 67.7],
+        ["2007 Q3", 64],
+        ["2007 Q4", 67.2],
+        ["2008 Q1", 74.3],
+        ["2008 Q2", 62.9],
+        ["2008 Q3", 60.1],
+        ["2008 Q4", 73.2],
+        ["2009 Q1", 94.3],
+        ["2009 Q2", 93.8],
+        ["2009 Q3", 98.7],
+        ["2009 Q4", 109.6],
+        ["2010 Q1", 129.5],
+        ["2010 Q2", 131.4],
+        ["2010 Q3", 133.3],
+        ["2010 Q4", 152.7],
+        ["2011 Q1", 172.2],
+        ["2011 Q2", 174.8],
+        ["2011 Q3", 188.2],
+        ["2011 Q4", 231.6],
+        ["2012 Q1", 260.1],
+        ["2012 Q2", 277.3],
+        ["2012 Q3", 297.6],
+        ["2012 Q4", 316.2],
+        ["2013 Q1", 341.4],
+        ["2013 Q2", 331.5],
+        ["2013 Q3", 332.3],
+        ["2013 Q4", 341.2],
+        ["2014 Q1", 358.9],
+        ["2014 Q2", 351.2],
+        ["2014 Q3", 326.2],
+        ["2014 Q4", 340.1]
+    ]
+},
+
+
+{
+    "key": "Unemployment Age 65 +",
+        "values": [
+        ["2001 Q1", 1.4],
+        ["2001 Q2", 1.1],
+        ["2001 Q3", 1.3],
+        ["2001 Q4", 1.6],
+        ["2002 Q1", 1.8],
+        ["2002 Q2", 0.7],
+        ["2002 Q3", 1.2],
+        ["2002 Q4", 1.5],
+        ["2003 Q1", 1.1],
+        ["2003 Q2", 1.2],
+        ["2003 Q3", 0.9],
+        ["2003 Q4", 1.5],
+        ["2004 Q1", 0.7],
+        ["2004 Q2", 1.1],
+        ["2004 Q3", 0.5],
+        ["2004 Q4", 1.1],
+        ["2005 Q1", 1.4],
+        ["2005 Q2", 1.3],
+        ["2005 Q3", 1.2],
+        ["2005 Q4", 1.3],
+        ["2006 Q1", 1.9],
+        ["2006 Q2", 1],
+        ["2006 Q3", 0.5],
+        ["2006 Q4", 0.9],
+        ["2007 Q1", 0.9],
+        ["2007 Q2", 1.2],
+        ["2007 Q3", 0.8],
+        ["2007 Q4", 1],
+        ["2008 Q1", 0.7],
+        ["2008 Q2", 0.6],
+        ["2008 Q3", 1],
+        ["2008 Q4", 0.6],
+        ["2009 Q1", 0.8],
+        ["2009 Q2", 0.6],
+        ["2009 Q3", 0.7],
+        ["2009 Q4", 0.9],
+        ["2010 Q1", 1],
+        ["2010 Q2", 1],
+        ["2010 Q3", 1.2],
+        ["2010 Q4", 1.4],
+        ["2011 Q1", 1.8],
+        ["2011 Q2", 1.4],
+        ["2011 Q3", 2.3],
+        ["2011 Q4", 2.4],
+        ["2012 Q1", 2],
+        ["2012 Q2", 2.6],
+        ["2012 Q3", 2.7],
+        ["2012 Q4", 3.7],
+        ["2013 Q1", 4.2],
+        ["2013 Q2", 6.5],
+        ["2013 Q3", 4.9],
+        ["2013 Q4", 6],
+        ["2014 Q1", 8.1],
+        ["2014 Q2", 6.5],
+        ["2014 Q3", 5.9],
+        ["2014 Q4", 6.9]
+    ]
+}];
+
+var URateAgeDatum =
+
+[{
+    "key": "Unemployment Rate Age 15-19",
+        "values": [
+        ["2001 Q1", 35.5],
+        ["2001 Q2", 35],
+        ["2001 Q3", 32.5],
+        ["2001 Q4", 36],
+        ["2002 Q1", 35.9],
+        ["2002 Q2", 30],
+        ["2002 Q3", 32.3],
+        ["2002 Q4", 35.2],
+        ["2003 Q1", 36.4],
+        ["2003 Q2", 30.8],
+        ["2003 Q3", 30.7],
+        ["2003 Q4", 33.7],
+        ["2004 Q1", 39],
+        ["2004 Q2", 34.1],
+        ["2004 Q3", 31.6],
+        ["2004 Q4", 30.9],
+        ["2005 Q1", 32.9],
+        ["2005 Q2", 31.2],
+        ["2005 Q3", 32.4],
+        ["2005 Q4", 35.7],
+        ["2006 Q1", 31.3],
+        ["2006 Q2", 32.3],
+        ["2006 Q3", 30.2],
+        ["2006 Q4", 33.2],
+        ["2007 Q1", 31.3],
+        ["2007 Q2", 24.9],
+        ["2007 Q3", 23.7],
+        ["2007 Q4", 26.9],
+        ["2008 Q1", 28.1],
+        ["2008 Q2", 26.2],
+        ["2008 Q3", 21.4],
+        ["2008 Q4", 29.1],
+        ["2009 Q1", 33.7],
+        ["2009 Q2", 31.1],
+        ["2009 Q3", 28.8],
+        ["2009 Q4", 32.2],
+        ["2010 Q1", 33.5],
+        ["2010 Q2", 36.9],
+        ["2010 Q3", 38.2],
+        ["2010 Q4", 48.4],
+        ["2011 Q1", 56.4],
+        ["2011 Q2", 54.9],
+        ["2011 Q3", 54.9],
+        ["2011 Q4", 59.7],
+        ["2012 Q1", 63.3],
+        ["2012 Q2", 64.2],
+        ["2012 Q3", 66.4],
+        ["2012 Q4", 69.3],
+        ["2013 Q1", 74],
+        ["2013 Q2", 73.1],
+        ["2013 Q3", 70.3],
+        ["2013 Q4", 71.4],
+        ["2014 Q1", 71.6],
+        ["2014 Q2", 63],
+        ["2014 Q3", 58.4],
+        ["2014 Q4", 53.1]
+    ]
+},
+
+
+{
+    "key": "Unemployment Rate Age 20-24",
+        "values": [
+        ["2001 Q1", 27.6],
+        ["2001 Q2", 26.5],
+        ["2001 Q3", 25.7],
+        ["2001 Q4", 27],
+        ["2002 Q1", 27.3],
+        ["2002 Q2", 25.1],
+        ["2002 Q3", 24.3],
+        ["2002 Q4", 24.7],
+        ["2003 Q1", 25],
+        ["2003 Q2", 24.5],
+        ["2003 Q3", 25.8],
+        ["2003 Q4", 27],
+        ["2004 Q1", 26.3],
+        ["2004 Q2", 24.8],
+        ["2004 Q3", 24.1],
+        ["2004 Q4", 25.5],
+        ["2005 Q1", 24.2],
+        ["2005 Q2", 24],
+        ["2005 Q3", 24.9],
+        ["2005 Q4", 25.2],
+        ["2006 Q1", 24.1],
+        ["2006 Q2", 22.9],
+        ["2006 Q3", 23.1],
+        ["2006 Q4", 25.2],
+        ["2007 Q1", 23.8],
+        ["2007 Q2", 21.1],
+        ["2007 Q3", 21.6],
+        ["2007 Q4", 21.5],
+        ["2008 Q1", 22.4],
+        ["2008 Q2", 19.4],
+        ["2008 Q3", 21],
+        ["2008 Q4", 21.8],
+        ["2009 Q1", 24],
+        ["2009 Q2", 23.4],
+        ["2009 Q3", 24],
+        ["2009 Q4", 27.7],
+        ["2010 Q1", 30.2],
+        ["2010 Q2", 30.6],
+        ["2010 Q3", 32],
+        ["2010 Q4", 35.7],
+        ["2011 Q1", 37.9],
+        ["2011 Q2", 41.7],
+        ["2011 Q3", 43.9],
+        ["2011 Q4", 48.6],
+        ["2012 Q1", 51],
+        ["2012 Q2", 52.3],
+        ["2012 Q3", 54.9],
+        ["2012 Q4", 56.1],
+        ["2013 Q1", 57.9],
+        ["2013 Q2", 57],
+        ["2013 Q3", 54.9],
+        ["2013 Q4", 54.4],
+        ["2014 Q1", 54.6],
+        ["2014 Q2", 50.3],
+        ["2014 Q3", 48.4],
+        ["2014 Q4", 51.3]
+    ]
+},
+
+
+{
+    "key": "Unemployment Rate Age 25-29",
+        "values": [
+        ["2001 Q1", 17.4],
+        ["2001 Q2", 16.2],
+        ["2001 Q3", 16],
+        ["2001 Q4", 17.9],
+        ["2002 Q1", 17.3],
+        ["2002 Q2", 16.2],
+        ["2002 Q3", 16.2],
+        ["2002 Q4", 17],
+        ["2003 Q1", 16.3],
+        ["2003 Q2", 15.4],
+        ["2003 Q3", 15.5],
+        ["2003 Q4", 17.2],
+        ["2004 Q1", 16.1],
+        ["2004 Q2", 15.6],
+        ["2004 Q3", 16.1],
+        ["2004 Q4", 16.2],
+        ["2005 Q1", 15.9],
+        ["2005 Q2", 14.8],
+        ["2005 Q3", 15.1],
+        ["2005 Q4", 14.6],
+        ["2006 Q1", 14.6],
+        ["2006 Q2", 13.8],
+        ["2006 Q3", 13.7],
+        ["2006 Q4", 13.7],
+        ["2007 Q1", 14.5],
+        ["2007 Q2", 14.2],
+        ["2007 Q3", 13.9],
+        ["2007 Q4", 14.3],
+        ["2008 Q1", 14.1],
+        ["2008 Q2", 12.7],
+        ["2008 Q3", 12.5],
+        ["2008 Q4", 12.9],
+        ["2009 Q1", 14.8],
+        ["2009 Q2", 14],
+        ["2009 Q3", 15.2],
+        ["2009 Q4", 16.3],
+        ["2010 Q1", 17.8],
+        ["2010 Q2", 18.2],
+        ["2010 Q3", 19.7],
+        ["2010 Q4", 23.2],
+        ["2011 Q1", 26.3],
+        ["2011 Q2", 27.4],
+        ["2011 Q3", 30.1],
+        ["2011 Q4", 33.9],
+        ["2012 Q1", 35.7],
+        ["2012 Q2", 36.6],
+        ["2012 Q3", 37.9],
+        ["2012 Q4", 39.3],
+        ["2013 Q1", 41.1],
+        ["2013 Q2", 44.1],
+        ["2013 Q3", 43.5],
+        ["2013 Q4", 44.5],
+        ["2014 Q1", 42.4],
+        ["2014 Q2", 40],
+        ["2014 Q3", 39.7],
+        ["2014 Q4", 41.1]
+    ]
+}, {
+    "key": "Unemployment Rate Age 30-44",
+        "values": [
+        ["2001 Q1", 9.2],
+        ["2001 Q2", 8.3],
+        ["2001 Q3", 8.1],
+        ["2001 Q4", 9],
+        ["2002 Q1", 9.4],
+        ["2002 Q2", 8.1],
+        ["2002 Q3", 8],
+        ["2002 Q4", 8.5],
+        ["2003 Q1", 8.8],
+        ["2003 Q2", 7.9],
+        ["2003 Q3", 7.9],
+        ["2003 Q4", 8.3],
+        ["2004 Q1", 10],
+        ["2004 Q2", 8.9],
+        ["2004 Q3", 8.9],
+        ["2004 Q4", 9.1],
+        ["2005 Q1", 9.3],
+        ["2005 Q2", 8.8],
+        ["2005 Q3", 8.8],
+        ["2005 Q4", 8.8],
+        ["2006 Q1", 8.8],
+        ["2006 Q2", 7.9],
+        ["2006 Q3", 7.4],
+        ["2006 Q4", 7.9],
+        ["2007 Q1", 8.4],
+        ["2007 Q2", 7.2],
+        ["2007 Q3", 7],
+        ["2007 Q4", 7.2],
+        ["2008 Q1", 7.4],
+        ["2008 Q2", 6.5],
+        ["2008 Q3", 6.5],
+        ["2008 Q4", 7.2],
+        ["2009 Q1", 8.6],
+        ["2009 Q2", 8.1],
+        ["2009 Q3", 8.3],
+        ["2009 Q4", 9.4],
+        ["2010 Q1", 11.1],
+        ["2010 Q2", 11],
+        ["2010 Q3", 11.5],
+        ["2010 Q4", 13.3],
+        ["2011 Q1", 15],
+        ["2011 Q2", 15],
+        ["2011 Q3", 16.2],
+        ["2011 Q4", 19.1],
+        ["2012 Q1", 21.4],
+        ["2012 Q2", 22.4],
+        ["2012 Q3", 23.3],
+        ["2012 Q4", 25],
+        ["2013 Q1", 26.1],
+        ["2013 Q2", 25.5],
+        ["2013 Q3", 25.9],
+        ["2013 Q4", 26.5],
+        ["2014 Q1", 26.7],
+        ["2014 Q2", 25.5],
+        ["2014 Q3", 24.7],
+        ["2014 Q4", 24.7]
+    ]
+},
+
+
+{
+    "key": "Unemployment Rate Age 45-64",
+        "values": [
+        ["2001 Q1", 5.4],
+        ["2001 Q2", 4.9],
+        ["2001 Q3", 4.7],
+        ["2001 Q4", 5.5],
+        ["2002 Q1", 5.7],
+        ["2002 Q2", 4.6],
+        ["2002 Q3", 4.4],
+        ["2002 Q4", 4.7],
+        ["2003 Q1", 5],
+        ["2003 Q2", 4.1],
+        ["2003 Q3", 3.7],
+        ["2003 Q4", 4.3],
+        ["2004 Q1", 5.8],
+        ["2004 Q2", 5],
+        ["2004 Q3", 5],
+        ["2004 Q4", 5.4],
+        ["2005 Q1", 5.8],
+        ["2005 Q2", 5],
+        ["2005 Q3", 4.9],
+        ["2005 Q4", 5.1],
+        ["2006 Q1", 5.3],
+        ["2006 Q2", 4.4],
+        ["2006 Q3", 4],
+        ["2006 Q4", 4.4],
+        ["2007 Q1", 4.8],
+        ["2007 Q2", 4.1],
+        ["2007 Q3", 3.8],
+        ["2007 Q4", 4],
+        ["2008 Q1", 4.4],
+        ["2008 Q2", 3.7],
+        ["2008 Q3", 3.5],
+        ["2008 Q4", 4.3],
+        ["2009 Q1", 5.5],
+        ["2009 Q2", 5.4],
+        ["2009 Q3", 5.7],
+        ["2009 Q4", 6.3],
+        ["2010 Q1", 7.4],
+        ["2010 Q2", 7.5],
+        ["2010 Q3", 7.6],
+        ["2010 Q4", 8.7],
+        ["2011 Q1", 9.9],
+        ["2011 Q2", 10.1],
+        ["2011 Q3", 10.9],
+        ["2011 Q4", 13.5],
+        ["2012 Q1", 15.1],
+        ["2012 Q2", 16],
+        ["2012 Q3", 17.1],
+        ["2012 Q4", 18.1],
+        ["2013 Q1", 19.6],
+        ["2013 Q2", 18.8],
+        ["2013 Q3", 18.9],
+        ["2013 Q4", 19.5],
+        ["2014 Q1", 20.3],
+        ["2014 Q2", 19.9],
+        ["2014 Q3", 18.5],
+        ["2014 Q4", 19.3]
+    ]
+},
+
+{
+    "key": "Unemployment Rate Age 65 +",
+        "values": [
+        ["2001 Q1", 1.4],
+        ["2001 Q2", 1.2],
+        ["2001 Q3", 1.5],
+        ["2001 Q4", 2],
+        ["2002 Q1", 2],
+        ["2002 Q2", 0.7],
+        ["2002 Q3", 1.3],
+        ["2002 Q4", 1.6],
+        ["2003 Q1", 1.1],
+        ["2003 Q2", 1.2],
+        ["2003 Q3", 0.9],
+        ["2003 Q4", 1.5],
+        ["2004 Q1", 1],
+        ["2004 Q2", 1.4],
+        ["2004 Q3", 0.6],
+        ["2004 Q4", 1.4],
+        ["2005 Q1", 1.8],
+        ["2005 Q2", 1.5],
+        ["2005 Q3", 1.4],
+        ["2005 Q4", 1.5],
+        ["2006 Q1", 2.1],
+        ["2006 Q2", 1.1],
+        ["2006 Q3", 0.6],
+        ["2006 Q4", 1],
+        ["2007 Q1", 1],
+        ["2007 Q2", 1.3],
+        ["2007 Q3", 1],
+        ["2007 Q4", 1.2],
+        ["2008 Q1", 0.8],
+        ["2008 Q2", 0.7],
+        ["2008 Q3", 1.1],
+        ["2008 Q4", 0.7],
+        ["2009 Q1", 0.9],
+        ["2009 Q2", 0.7],
+        ["2009 Q3", 0.8],
+        ["2009 Q4", 1],
+        ["2010 Q1", 1.1],
+        ["2010 Q2", 1.2],
+        ["2010 Q3", 1.5],
+        ["2010 Q4", 1.6],
+        ["2011 Q1", 2.1],
+        ["2011 Q2", 1.8],
+        ["2011 Q3", 3.1],
+        ["2011 Q4", 3.4],
+        ["2012 Q1", 3.1],
+        ["2012 Q2", 4.1],
+        ["2012 Q3", 4.5],
+        ["2012 Q4", 6.2],
+        ["2013 Q1", 7.4],
+        ["2013 Q2", 10.9],
+        ["2013 Q3", 8.2],
+        ["2013 Q4", 9.7],
+        ["2014 Q1", 12.6],
+        ["2014 Q2", 10.2],
+        ["2014 Q3", 9.3],
+        ["2014 Q4", 10.9]
+    ]
+}, {
+    "key": "Total Unemployment Rate",
+        "values": [
+        ["2001 Q1", 11.2],
+        ["2001 Q2", 10.5],
+        ["2001 Q3", 10.2],
+        ["2001 Q4", 11.2],
+        ["2002 Q1", 11.4],
+        ["2002 Q2", 10],
+        ["2002 Q3", 9.8],
+        ["2002 Q4", 10.2],
+        ["2003 Q1", 10.4],
+        ["2003 Q2", 9.4],
+        ["2003 Q3", 9.3],
+        ["2003 Q4", 10],
+        ["2004 Q1", 11.4],
+        ["2004 Q2", 10.3],
+        ["2004 Q3", 10.2],
+        ["2004 Q4", 10.5],
+        ["2005 Q1", 10.5],
+        ["2005 Q2", 9.8],
+        ["2005 Q3", 9.8],
+        ["2005 Q4", 9.9],
+        ["2006 Q1", 9.8],
+        ["2006 Q2", 8.9],
+        ["2006 Q3", 8.4],
+        ["2006 Q4", 8.9],
+        ["2007 Q1", 9.2],
+        ["2007 Q2", 8.2],
+        ["2007 Q3", 8],
+        ["2007 Q4", 8.2],
+        ["2008 Q1", 8.4],
+        ["2008 Q2", 7.3],
+        ["2008 Q3", 7.3],
+        ["2008 Q4", 8],
+        ["2009 Q1", 9.5],
+        ["2009 Q2", 9],
+        ["2009 Q3", 9.4],
+        ["2009 Q4", 10.5],
+        ["2010 Q1", 11.9],
+        ["2010 Q2", 12],
+        ["2010 Q3", 12.6],
+        ["2010 Q4", 14.4],
+        ["2011 Q1", 16.1],
+        ["2011 Q2", 16.5],
+        ["2011 Q3", 17.9],
+        ["2011 Q4", 20.9],
+        ["2012 Q1", 22.8],
+        ["2012 Q2", 23.8],
+        ["2012 Q3", 24.9],
+        ["2012 Q4", 26.2],
+        ["2013 Q1", 27.6],
+        ["2013 Q2", 27.3],
+        ["2013 Q3", 27.2],
+        ["2013 Q4", 27.8],
+        ["2014 Q1", 27.8],
+        ["2014 Q2", 26.6],
+        ["2014 Q3", 25.5],
+        ["2014 Q4", 26.1]
+    ], //"area" : true //jiannis 
+
+}];
+
+//Data Map
+var myDataMap = {
+    '-1': {
+        "mode": "-1",
+            "data": null
+    },
+        'gdtu': {
+        "mode": "linePlusBar",
+            "data": GDTURdatum
+    },
+        "ps": {
+        "mode": "multiBar",
+            "data": PSTSectorDatum
+    },
+        "ux1000": {
+        "mode": "multiBar",
+            "data": U1000Datum
+    },
+        "ura": {
+        "mode": "lineChart",
+            "data": URateAgeDatum
+    }
+
+};
+}//]]>  
+
+</script>
+
+
+</head>
+<body>
+<center>
+    <label for="chartOpt" class="combolabel">Chart:</label>
+    <select name="chartOpt" id="chartOpt">
+        <option value="-1">Please select statistics data</option>
+        <option value="gdtu">Gross Domestic Product and Total Unemployment Rate</option>
+        <option value="ps">Employed (in thousands) aged 15 and over by economic activity</option>
+        <option value="ux1000">Unemployment (in thousands) across Ages</option>
+        <option value="ura">Unemployment Rate across Ages</option>
+    </select>
+</center>
+<hr style="margin-top:10px;margin-bottom:10px">
+<div id="chart">
+    <svg class="chartSvgSelector"></svg>
+</div>
+  
+</body>
+
+
+</html>
+
